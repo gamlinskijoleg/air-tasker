@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Button, ScrollView, Platform, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Button, ScrollView, StyleSheet } from "react-native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { MainTabsParamList } from "../App";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useUserContext } from "../context/UserContext";
 import axios from "axios";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { TaskCard } from "./components/TaskCard";
+import { TaskForm } from "./components/TaskForm";
 
 type Props = BottomTabScreenProps<MainTabsParamList, "dashboard">;
 
 export default function DashboardScreen({ route }: Props) {
 	const { user, token, role } = useUserContext();
 	const { loading, error, refetch } = useCurrentUser(token);
-	const [showDatePicker, setShowDatePicker] = useState(false);
-	const [day, setDay] = useState(new Date());
-
+	const [tasks, setTasks] = useState<any[]>([]);
+	const [day, setDay] = useState("");
 	const [showForm, setShowForm] = useState(false);
 	const [price, setPrice] = useState("");
 	const [place, setPlace] = useState("");
-
-	const [timeOfDay, setTimeOfDay] = useState<"Morning" | "Midday" | "Evening" | "Night">("Morning");
-	const [jobType, setJobType] = useState<"Gardening" | "Painting" | "Cleaning" | "Removals" | "Repairs and Installations" | "Copywriting" | "Data Entry" | "Furniture Assembly">(
-		"Gardening"
-	);
-
+	const [title, setTitle] = useState("");
 	const [message, setMessage] = useState<string | null>(null);
 	const [messageType, setMessageType] = useState<"error" | "success" | null>(null);
+	const [timeOfDay, setTimeOfDay] = useState<string>("Morning");
+	const [jobType, setJobType] = useState<string>("Gardening");
 
 	useEffect(() => {
 		if (error) {
@@ -34,20 +31,24 @@ export default function DashboardScreen({ route }: Props) {
 		}
 	}, [error]);
 
-	const handleSubmit = async () => {
-		if (!price || !place) {
-			setMessage("Будь ласка, заповніть всі поля");
-			setMessageType("error");
-			return;
+	useEffect(() => {
+		if (user?.user_role === "worker") {
+			axios
+				.get("http://localhost:3000/tasks/all")
+				.then((res: any) => setTasks(res.data.tasks))
+				.catch((err) => console.error("Error loading tasks", err));
 		}
+	}, [user]);
 
+	const handleSubmit = async () => {
 		try {
 			await axios.post(
 				"http://localhost:3000/tasks/create",
 				{
+					title,
 					price: Number(price),
 					place,
-					day: day.toISOString().split("T")[0],
+					day,
 					time: timeOfDay,
 					type: jobType,
 				},
@@ -60,11 +61,11 @@ export default function DashboardScreen({ route }: Props) {
 
 			setMessage("Завдання успішно створено!");
 			setMessageType("success");
-
 			setShowForm(false);
 			setPrice("");
 			setPlace("");
-			setDay(new Date());
+			setDay("");
+			setTitle("");
 			setTimeOfDay("Morning");
 			setJobType("Gardening");
 		} catch (err: any) {
@@ -76,7 +77,7 @@ export default function DashboardScreen({ route }: Props) {
 
 	if (loading) {
 		return (
-			<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+			<View style={styles.center}>
 				<Text>Завантаження...</Text>
 			</View>
 		);
@@ -84,7 +85,7 @@ export default function DashboardScreen({ route }: Props) {
 
 	if (!user) {
 		return (
-			<View style={{ padding: 20 }}>
+			<View style={styles.container}>
 				<Text>Користувача не знайдено</Text>
 				<Text>Context data: {JSON.stringify({ user, token, role })}</Text>
 				<Button title="Спробувати знову" onPress={refetch} />
@@ -93,167 +94,64 @@ export default function DashboardScreen({ route }: Props) {
 	}
 
 	return (
-		<ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 30 }}>
-			<Text style={{ fontSize: 32, fontWeight: "bold", color: "#00509e", marginBottom: 24, textAlign: "center" }}>Dashboard</Text>
+		<ScrollView contentContainerStyle={styles.container}>
+			<Text style={styles.title}>Dashboard</Text>
 
-			<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>Email:</Text>
-			<Text style={{ fontSize: 18, color: "#333" }}>{user.email}</Text>
+			<Text style={styles.label}>Email:</Text>
+			<Text style={styles.value}>{user.email}</Text>
 
-			<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>Роль:</Text>
-			<Text style={{ fontSize: 18, color: "#333" }}>{user.user_role}</Text>
+			<Text style={styles.label}>Роль:</Text>
+			<Text style={styles.value}>{user.user_role}</Text>
 
 			{user.user_role === "customer" && !showForm && (
-				<View style={{ marginTop: 20 }}>
+				<View style={styles.buttonContainer}>
 					<Button title="🛠️ Make something done" onPress={() => setShowForm(true)} />
 				</View>
 			)}
 
-			{showForm && (
-				<View style={{ marginTop: 20, backgroundColor: "#fff", padding: 16, borderRadius: 8, elevation: 2 }}>
-					<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>💰 Price:</Text>
-					<TextInput
-						style={{
-							backgroundColor: "#eef",
-							borderColor: "#00509e",
-							borderWidth: 1,
-							borderRadius: 6,
-							paddingHorizontal: 12,
-							paddingVertical: 8,
-							marginBottom: 12,
-							fontSize: 16,
-						}}
-						keyboardType="numeric"
-						value={price}
-						onChangeText={setPrice}
-						placeholder="Введіть ціну"
-					/>
-					<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>📍 Place:</Text>
-					<TextInput
-						style={{
-							backgroundColor: "#eef",
-							borderColor: "#00509e",
-							borderWidth: 1,
-							borderRadius: 6,
-							paddingHorizontal: 12,
-							paddingVertical: 8,
-							marginBottom: 12,
-							fontSize: 16,
-						}}
-						value={place}
-						onChangeText={setPlace}
-						placeholder="Введіть місце"
-					/>
-					<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>📆 Day:</Text>
-					<TouchableOpacity
-						onPress={() => setShowDatePicker(true)}
-						style={{
-							backgroundColor: "#eef",
-							borderColor: "#00509e",
-							borderWidth: 1,
-							borderRadius: 6,
-							paddingHorizontal: 12,
-							paddingVertical: 12,
-							marginBottom: 12,
-						}}
-					>
-						<Text>{day.toDateString()}</Text>
-					</TouchableOpacity>
-					{showDatePicker && (
-						<DateTimePicker
-							value={day}
-							mode="date"
-							display="default"
-							onChange={(event, selectedDate) => {
-								setShowDatePicker(false);
-								if (selectedDate) {
-									setDay(selectedDate);
-								}
-							}}
-						/>
-					)}
+			{user.user_role === "worker" && tasks.map((task, i) => <TaskCard key={i} task={task} />)}
 
-					<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>🕒 Time of day:</Text>
-					<View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
-						{["Morning", "Midday", "Evening", "Night"].map((time) => (
-							<TouchableOpacity
-								key={time}
-								style={{
-									paddingVertical: 6,
-									paddingHorizontal: 10,
-									marginRight: 10,
-									marginBottom: 8,
-									backgroundColor: timeOfDay === time ? "#00509e" : "#cce5ff",
-									borderRadius: 6,
-								}}
-								onPress={() => setTimeOfDay(time as any)}
-							>
-								<Text style={{ color: timeOfDay === time ? "white" : "#00509e", fontWeight: "600" }}>{time}</Text>
-							</TouchableOpacity>
-						))}
-					</View>
-					<Text style={{ fontSize: 18, color: "#00509e", fontWeight: "600", marginTop: 12, marginBottom: 6 }}>🔧 Type of work:</Text>
-					<View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
-						{["Gardening", "Painting", "Cleaning", "Removals", "Repairs and Installations", "Copywriting", "Data Entry", "Furniture Assembly"].map((type) => (
-							<TouchableOpacity
-								key={type}
-								style={{
-									paddingVertical: 6,
-									paddingHorizontal: 10,
-									marginRight: 10,
-									marginBottom: 8,
-									backgroundColor: jobType === type ? "#00509e" : "#cce5ff",
-									borderRadius: 6,
-								}}
-								onPress={() => setJobType(type as any)}
-							>
-								<Text style={{ color: jobType === type ? "white" : "#00509e", fontWeight: "600" }}>{type}</Text>
-							</TouchableOpacity>
-						))}
-					</View>
-					<View style={{ marginTop: 20 }}>
-						<Button title="📤 Submit Task" onPress={handleSubmit} />
-					</View>
-					<View style={{ marginTop: 10 }}>
-						<Button
-							title="❌ Cancel"
-							color="red"
-							onPress={() => {
-								setShowForm(false);
-								setMessage(null);
-								setMessageType(null);
-							}}
-						/>
-					</View>
-				</View>
+			{showForm && (
+				<TaskForm
+					title={title}
+					setTitle={setTitle}
+					price={price}
+					setPrice={setPrice}
+					place={place}
+					setPlace={setPlace}
+					day={day}
+					setDay={setDay}
+					timeOfDay={timeOfDay}
+					setTimeOfDay={setTimeOfDay}
+					jobType={jobType}
+					setJobType={setJobType}
+					onCancel={() => {
+						setShowForm(false);
+						setMessage(null);
+						setMessageType(null);
+					}}
+					onSubmit={handleSubmit}
+				/>
 			)}
 
 			{message && (
-				<View
-					style={{
-						marginTop: 20,
-						padding: 12,
-						borderRadius: 6,
-						backgroundColor: messageType === "error" ? "#f8d7da" : "#d1e7dd",
-						borderColor: messageType === "error" ? "#f5c2c7" : "#badbcc",
-						borderWidth: 1,
-					}}
-				>
-					<Text style={{ fontSize: 16, color: messageType === "error" ? "#842029" : "#0f5132" }}>{message}</Text>
+				<View style={[styles.messageBox, messageType === "error" ? styles.errorBox : styles.successBox]}>
+					<Text style={[styles.messageText, messageType === "error" ? styles.errorText : styles.successText]}>{message}</Text>
 				</View>
 			)}
 
 			{user.user_role === "customer" ? (
-				<View style={{ marginTop: 24, backgroundColor: "#d6eaff", padding: 16, borderRadius: 8 }}>
-					<Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>Ласкаво просимо, клієнте!</Text>
+				<View style={styles.roleBox}>
+					<Text style={styles.roleText}>Ласкаво просимо, клієнте!</Text>
 					<Text>Ви можете шукати виконавців та створювати завдання.</Text>
 				</View>
 			) : user.user_role === "worker" ? (
-				<View style={{ marginTop: 24, backgroundColor: "#d6eaff", padding: 16, borderRadius: 8 }}>
-					<Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>Вітаємо, працівнику!</Text>
+				<View style={styles.roleBox}>
+					<Text style={styles.roleText}>Вітаємо, працівнику!</Text>
 					<Text>Перегляньте доступні завдання та подавайте заявки.</Text>
 				</View>
 			) : (
-				<Text style={{ marginTop: 20, color: "red", fontSize: 16, textAlign: "center" }}>Невідома роль користувача</Text>
+				<Text style={styles.warning}>Невідома роль користувача</Text>
 			)}
 		</ScrollView>
 	);
@@ -289,66 +187,6 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		color: "#333",
 	},
-	roleBox: {
-		marginTop: 24,
-		backgroundColor: "#d6eaff",
-		padding: 16,
-		borderRadius: 8,
-	},
-	roleText: {
-		fontSize: 18,
-		fontWeight: "bold",
-		marginBottom: 8,
-	},
-	warning: {
-		marginTop: 20,
-		color: "red",
-		fontSize: 16,
-		textAlign: "center",
-	},
-	buttonContainer: {
-		marginTop: 20,
-	},
-	formContainer: {
-		marginTop: 20,
-		backgroundColor: "#fff",
-		padding: 16,
-		borderRadius: 8,
-		elevation: 2,
-	},
-	input: {
-		backgroundColor: "#eef",
-		borderColor: "#00509e",
-		borderWidth: 1,
-		borderRadius: 6,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		marginBottom: 12,
-		fontSize: 16,
-	},
-	enumContainer: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		marginBottom: 12,
-	},
-	enumButton: {
-		paddingVertical: 6,
-		paddingHorizontal: 10,
-		marginRight: 10,
-		marginBottom: 8,
-		backgroundColor: "#cce5ff",
-		borderRadius: 6,
-	},
-	enumButtonSelected: {
-		backgroundColor: "#00509e",
-	},
-	enumButtonText: {
-		color: "#00509e",
-		fontWeight: "600",
-	},
-	enumButtonTextSelected: {
-		color: "white",
-	},
 	messageBox: {
 		marginTop: 20,
 		padding: 12,
@@ -372,5 +210,25 @@ const styles = StyleSheet.create({
 	},
 	successText: {
 		color: "#0f5132",
+	},
+	roleBox: {
+		marginTop: 24,
+		backgroundColor: "#d6eaff",
+		padding: 16,
+		borderRadius: 8,
+	},
+	roleText: {
+		fontSize: 18,
+		fontWeight: "bold",
+		marginBottom: 8,
+	},
+	warning: {
+		marginTop: 20,
+		color: "red",
+		fontSize: 16,
+		textAlign: "center",
+	},
+	buttonContainer: {
+		marginTop: 20,
 	},
 });

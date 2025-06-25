@@ -36,20 +36,14 @@ export default function LoginScreen({ navigation }: Props) {
 			const user = res.data.user;
 			const token = res.data.session.access_token;
 
-			// Зберігаємо користувача і токен у контекст
-			console.log("====================================");
-			console.log(user);
-			console.log("====================================");
 			setUser(user);
 			setToken(token);
 			await AsyncStorage.setItem("token", token);
 			await AsyncStorage.setItem("user", JSON.stringify(user));
 
-			// Очищення форми
 			setEmail("");
 			setPassword("");
 
-			// Навігація до головного таб-навігатора
 			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);

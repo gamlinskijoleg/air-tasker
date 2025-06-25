@@ -247,6 +247,17 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 	}
 });
 
+app.get("/tasks/all", async (req: Request, res: Response) => {
+	const { data, error } = await supabase.from("tasks").select("*");
+
+	if (error) {
+		console.error("Fetch tasks error:", error.message);
+		return res.status(500).json({ error: error.message });
+	}
+
+	res.status(200).json({ tasks: data });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
 	console.log(`✅ Server is running on http:/localhost:${PORT}`);

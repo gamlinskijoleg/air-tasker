@@ -50,8 +50,6 @@ export function useCurrentUser(initialToken: string) {
 				return;
 			}
 
-			console.log("Fetching user with token:", token);
-
 			const res = await axios.get<MeResponse>(`${API_URL}/me`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
@@ -68,8 +66,6 @@ export function useCurrentUser(initialToken: string) {
 
 			// Зберігаємо юзера в AsyncStorage
 			await AsyncStorage.setItem("user", JSON.stringify(fetchedUser));
-
-			console.log("User fetched and stored:", fetchedUser);
 		} catch (err: any) {
 			const msg = err.response?.data?.error || err.message || "Не вдалося завантажити користувача";
 			console.error("❌ Fetch user error:", msg);
