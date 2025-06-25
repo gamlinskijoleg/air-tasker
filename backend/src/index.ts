@@ -110,7 +110,6 @@ app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 		return res.status(500).json({ error: "Server error" });
 	}
 });
-
 app.get("/me", async (req: Request, res: Response) => {
 	const authHeader = req.headers.authorization;
 
@@ -123,16 +122,24 @@ app.get("/me", async (req: Request, res: Response) => {
 	try {
 		const { data, error } = await supabase.auth.getUser(token);
 
-		if (error) {
-			console.error("Get user error:", error.message);
-			return res.status(401).json({ error: error.message });
+		if (error || !data.user) {
+			return res.status(401).json({ error: error?.message || "User not found" });
 		}
 
-		if (!data.user) {
-			return res.status(404).json({ error: "User not found" });
+		const user = data.user;
+
+		const { data: userRow, error: roleError } = await supabase.from("users").select("user_role").eq("uid", user.id).single();
+
+		if (roleError) {
+			return res.status(500).json({ error: roleError.message });
 		}
 
-		return res.status(200).json({ user: data.user });
+		return res.status(200).json({
+			user: {
+				...user,
+				user_role: userRow.user_role,
+			},
+		});
 	} catch (err) {
 		console.error("Get user failed:", err);
 		return res.status(500).json({ error: "Server error" });

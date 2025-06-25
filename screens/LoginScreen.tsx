@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvo
 import axios from "axios";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList, UserType } from "../App";
+import { useUserContext } from "../context/UserContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "login">;
 
@@ -18,25 +20,37 @@ export default function LoginScreen({ navigation }: Props) {
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 
+	const { setUser, setToken } = useUserContext();
+
 	const onLogin = async () => {
 		if (!email || !password) {
 			Alert.alert("Помилка", "Будь ласка, заповніть всі поля");
 			return;
 		}
+
 		setLoading(true);
+
 		try {
-			console.log(email, password);
 			const res = await axios.post<LoginResponse>("http://localhost:3000/login", { email, password });
+
 			const user = res.data.user;
 			const token = res.data.session.access_token;
 
-			Alert.alert("Успіх", "Вхід пройшов успішно");
+			// Зберігаємо користувача і токен у контекст
+			console.log("====================================");
+			console.log(user);
+			console.log("====================================");
+			setUser(user);
+			setToken(token);
+			await AsyncStorage.setItem("token", token);
+			await AsyncStorage.setItem("user", JSON.stringify(user));
 
+			// Очищення форми
 			setEmail("");
 			setPassword("");
 
-			// Переходимо до вкладок, одразу відкриваємо dashboard
-			navigation.replace("mainTabs", { user, token });
+			// Навігація до головного таб-навігатора
+			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
 			Alert.alert("Помилка входу", error.response?.data?.error || error.message || "Щось пішло не так");
@@ -46,8 +60,9 @@ export default function LoginScreen({ navigation }: Props) {
 	};
 
 	return (
-		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
+		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
 			<Text style={styles.title}>Вхід</Text>
+
 			<TextInput
 				style={styles.input}
 				placeholder="Email"
@@ -59,6 +74,7 @@ export default function LoginScreen({ navigation }: Props) {
 				value={email}
 				onChangeText={setEmail}
 			/>
+
 			<TextInput
 				style={styles.input}
 				placeholder="Пароль"
@@ -69,6 +85,7 @@ export default function LoginScreen({ navigation }: Props) {
 				value={password}
 				onChangeText={setPassword}
 			/>
+
 			<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onLogin} disabled={loading}>
 				<Text style={styles.buttonText}>{loading ? "Зачекайте..." : "Увійти"}</Text>
 			</TouchableOpacity>

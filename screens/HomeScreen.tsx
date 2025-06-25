@@ -1,11 +1,43 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../App";
+import { useUserContext } from "../context/UserContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "home">;
 
 export default function HomeScreen({ navigation }: Props) {
+	const [checkingAuth, setCheckingAuth] = React.useState(true);
+	const { setToken } = useUserContext();
+	useEffect(() => {
+		const checkToken = async () => {
+			try {
+				const token = await AsyncStorage.getItem("token");
+				if (token) {
+					setToken(token);
+					navigation.reset({
+						index: 0,
+						routes: [{ name: "mainTabs", params: { screen: "dashboard" } }],
+					});
+				}
+			} catch (e) {
+				console.error("Error reading token", e);
+			} finally {
+				setCheckingAuth(false);
+			}
+		};
+		checkToken();
+	}, [navigation]);
+
+	if (checkingAuth) {
+		return (
+			<View style={[styles.container, styles.center]}>
+				<ActivityIndicator size="large" color="#3B82F6" />
+			</View>
+		);
+	}
+
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>Welcome!</Text>
@@ -26,6 +58,10 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		paddingHorizontal: 30,
+	},
+	center: {
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	title: {
 		fontSize: 32,

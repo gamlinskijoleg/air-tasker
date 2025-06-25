@@ -1,7 +1,8 @@
-import React from "react";
-import { NavigationContainer, NavigatorScreenParams } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { NavigationContainer, InitialState } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import HomeScreen from "./screens/HomeScreen";
 import RegisterScreen from "./screens/RegisterScreen";
@@ -11,38 +12,34 @@ import AccountScreen from "./screens/AccountScreen";
 import BrowseScreen from "./screens/BrowseScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import MyTasksScreen from "./screens/MyTasksScreen";
+import { UserProvider } from "./context/UserContext";
+import { getInitialNavigationState, persistNavigationState } from "./utils/navigationPersistence";
 
 export type UserType = {
 	id: string;
 	email: string;
-	user_role: "customer" | "worker";
+	user_role: "customer" | "worker" | null;
 };
 
 export type RootStackParamList = {
 	home: undefined;
 	login: undefined;
 	registration: undefined;
-	mainTabs: {
-		user: UserType;
-		token: string;
-	};
+	mainTabs: undefined;
 };
 
 export type MainTabsParamList = {
-	dashboard: { user: UserType; token: string };
-	account: { user: UserType; token: string };
-	browse: { user: UserType; token: string };
-	messages: { user: UserType; token: string };
-	mytasks: { user: UserType; token: string };
+	dashboard: undefined;
+	account: undefined;
+	browse: undefined;
+	messages: undefined;
+	mytasks: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
-// Прокидаємо user та token як пропси в MainTabs і передаємо далі в кожен Tab.Screen
-function MainTabs({ route }: { route: { params: { user: UserType; token: string } } }) {
-	const { user, token } = route.params;
-
+function MainTabs() {
 	return (
 		<Tab.Navigator
 			initialRouteName="dashboard"
@@ -54,25 +51,40 @@ function MainTabs({ route }: { route: { params: { user: UserType; token: string 
 				tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
 			}}
 		>
-			<Tab.Screen name="dashboard" component={DashboardScreen} initialParams={{ user, token }} options={{ tabBarLabel: "Дашборд" }} />
-			<Tab.Screen name="browse" component={BrowseScreen} initialParams={{ user, token }} options={{ tabBarLabel: "Пошук" }} />
-			<Tab.Screen name="mytasks" component={MyTasksScreen} initialParams={{ user, token }} options={{ tabBarLabel: "Задачі" }} />
-			<Tab.Screen name="messages" component={MessagesScreen} initialParams={{ user, token }} options={{ tabBarLabel: "Повідомлення" }} />
-			<Tab.Screen name="account" component={AccountScreen} initialParams={{ user, token }} options={{ tabBarLabel: "Акаунт" }} />
+			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Дашборд" }} />
+			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
+			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Задачі" }} />
+			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} />
+			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Акаунт" }} />
 		</Tab.Navigator>
 	);
 }
 
 export default function App() {
+	const [isReady, setIsReady] = useState(false);
+	const [initialState, setInitialState] = useState<InitialState | undefined>();
+
+	useEffect(() => {
+		const restoreState = async () => {
+			const state = await getInitialNavigationState();
+			if (state) setInitialState(state);
+			setIsReady(true);
+		};
+		restoreState();
+	}, []);
+
+	if (!isReady) return null;
+
 	return (
-		<NavigationContainer>
-			<Stack.Navigator initialRouteName="home" screenOptions={{ headerTitleAlign: "center" }}>
-				<Stack.Screen name="home" component={HomeScreen} options={{ title: "Головна" }} />
-				<Stack.Screen name="login" component={LoginScreen} options={{ title: "Вхід" }} />
-				<Stack.Screen name="registration" component={RegisterScreen} options={{ title: "Реєстрація" }} />
-				{/* Прокидаємо user та token у MainTabs через render prop */}
-				<Stack.Screen name="mainTabs" options={{ headerShown: false }} component={MainTabs} initialParams={{ user: null as any, token: "" }} />
-			</Stack.Navigator>
-		</NavigationContainer>
+		<UserProvider>
+			<NavigationContainer initialState={initialState} onStateChange={(state) => persistNavigationState(state)}>
+				<Stack.Navigator initialRouteName="home" screenOptions={{ headerTitleAlign: "center" }}>
+					<Stack.Screen name="home" component={HomeScreen} options={{ title: "Головна" }} />
+					<Stack.Screen name="login" component={LoginScreen} options={{ title: "Вхід" }} />
+					<Stack.Screen name="registration" component={RegisterScreen} options={{ title: "Реєстрація" }} />
+					<Stack.Screen name="mainTabs" component={MainTabs} options={{ headerShown: false }} />
+				</Stack.Navigator>
+			</NavigationContainer>
+		</UserProvider>
 	);
 }

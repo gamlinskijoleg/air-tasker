@@ -1,16 +1,15 @@
-// screens/AccountScreen.tsx
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Alert, Button } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MainTabsParamList } from "../App";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import { useUserContext } from "../context/UserContext";
 
 type Props = NativeStackScreenProps<MainTabsParamList, "account">;
 
-export default function AccountScreen({ route, navigation }: Props) {
-	const { token } = route.params;
-
-	const { user, loading, error, refetch, updateRole, logout } = useCurrentUser(token);
+export default function AccountScreen({ navigation }: Props) {
+	const { user, token, role, setRole } = useUserContext();
+	const { loading, error, refetch, updateRole, logout } = useCurrentUser(token);
 
 	useEffect(() => {
 		if (error) Alert.alert("Помилка", error);
@@ -28,15 +27,17 @@ export default function AccountScreen({ route, navigation }: Props) {
 		return (
 			<View style={styles.container}>
 				<Text style={styles.errorText}>Користувача не знайдено</Text>
+				<Text>Context data: {JSON.stringify({ user, token, role })}</Text>
 				<Button title="Спробувати знову" onPress={refetch} />
 			</View>
 		);
 	}
 
-	const handleSetRole = async (role: "worker" | "customer") => {
+	const handleSetRole = async (newRole: "worker" | "customer") => {
 		try {
-			await updateRole(role);
-			Alert.alert("Успіх", `Роль оновлено до "${role}"`);
+			await updateRole(newRole);
+			setRole(newRole);
+			Alert.alert("Успіх", `Роль оновлено до "${newRole}"`);
 		} catch (e: any) {
 			Alert.alert("Помилка", e.message || "Не вдалося оновити роль");
 		}
