@@ -39,7 +39,6 @@ app.post("/register", async (req: Request, res: Response) => {
 			return res.status(500).json({ error: "User not created properly" });
 		}
 
-		// Використовуємо upsert замість insert — вставить або оновить, якщо такий uid вже є
 		const { error: upsertError } = await supabase.from("users").upsert(
 			[
 				{
@@ -87,7 +86,6 @@ app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 			return res.status(401).json({ error: "Invalid login credentials" });
 		}
 
-		// 🔍 Отримати роль користувача з таблиці users
 		const { data: userRow, error: userError } = await supabase.from("users").select("user_role").eq("uid", user.id).single();
 		if (userError) {
 			console.error("Supabase error:", userError.message);
@@ -98,7 +96,6 @@ app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 			return res.status(404).json({ error: "User record not found" });
 		}
 
-		// Додаємо роль до user
 		const fullUser = {
 			...user,
 			user_role: userRow.user_role,
@@ -203,7 +200,54 @@ app.post("/logout", async (req: Request, res: Response) => {
 		return res.status(500).json({ error: "Server error" });
 	}
 });
+
+app.post("/tasks/create", async (req: Request, res: Response) => {
+	const authHeader = req.headers.authorization;
+
+	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		return res.status(401).json({ error: "Unauthorized: No token provided" });
+	}
+
+	const token = authHeader.split(" ")[1];
+
+	try {
+		const { data, error } = await supabase.auth.getUser(token);
+
+		if (error || !data.user) {
+			return res.status(401).json({ error: error?.message || "User not found" });
+		}
+
+		const user = data.user;
+		const { price, place, day, time, type } = req.body;
+
+		if (!price || !place || !day || !time || !type) {
+			return res.status(400).json({ error: "Missing required fields" });
+		}
+
+		const { error: insertError } = await supabase.from("tasks").insert([
+			{
+				who_made_id: user.id,
+				price,
+				place,
+				day,
+				time,
+				type,
+			},
+		]);
+
+		if (insertError) {
+			console.error("Insert task error:", insertError.message);
+			return res.status(500).json({ error: insertError.message });
+		}
+
+		return res.status(201).json({ message: "Task created successfully" });
+	} catch (err) {
+		console.error("Create task failed:", err);
+		return res.status(500).json({ error: "Server error" });
+	}
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-	console.log(`✅ Server is running on http://localhost:${PORT}`);
+	console.log(`✅ Server is running on http:/localhost:${PORT}`);
 });

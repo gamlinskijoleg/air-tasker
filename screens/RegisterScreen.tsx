@@ -45,8 +45,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 			setEmail("");
 			setPassword("");
-
-			navigation.replace("mainTabs", { user, token });
+			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
 			Alert.alert("Помилка реєстрації", error.response?.data?.error || error.message || "Щось пішло не так");
