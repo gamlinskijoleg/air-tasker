@@ -7,10 +7,14 @@ import { useUserContext } from "../context/UserContext";
 import axios from "axios";
 import { TaskCard } from "./components/TaskCard";
 import { TaskForm } from "./components/TaskForm";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 
 type Props = BottomTabScreenProps<MainTabsParamList, "dashboard">;
 
 export default function DashboardScreen({ route }: Props) {
+	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 	const { user, token, role } = useUserContext();
 	const { loading, error, refetch } = useCurrentUser(token);
 	const [tasks, setTasks] = useState<any[]>([]);
@@ -23,6 +27,7 @@ export default function DashboardScreen({ route }: Props) {
 	const [messageType, setMessageType] = useState<"error" | "success" | null>(null);
 	const [timeOfDay, setTimeOfDay] = useState<string>("Morning");
 	const [jobType, setJobType] = useState<string>("Gardening");
+	const [description, setDescription] = useState("");
 
 	useEffect(() => {
 		if (error) {
@@ -32,12 +37,14 @@ export default function DashboardScreen({ route }: Props) {
 	}, [error]);
 
 	useEffect(() => {
-		if (user?.user_role === "worker") {
-			axios
-				.get("http://localhost:3000/tasks/all")
-				.then((res: any) => setTasks(res.data.tasks))
-				.catch((err) => console.error("Error loading tasks", err));
-		}
+		if (!user) return;
+
+		const url = user.user_role === "worker" ? "http://localhost:3000/tasks/all" : `http://localhost:3000/tasks/user/${user.id}`;
+
+		axios
+			.get(url)
+			.then((res: any) => setTasks(res.data.tasks))
+			.catch((err) => console.error("Error loading tasks", err));
 	}, [user]);
 
 	const handleSubmit = async () => {
@@ -46,6 +53,7 @@ export default function DashboardScreen({ route }: Props) {
 				"http://localhost:3000/tasks/create",
 				{
 					title,
+					description,
 					price: Number(price),
 					place,
 					day,
@@ -103,18 +111,36 @@ export default function DashboardScreen({ route }: Props) {
 			<Text style={styles.label}>Роль:</Text>
 			<Text style={styles.value}>{user.user_role}</Text>
 
+			{user.user_role === "customer" ? (
+				<View style={styles.roleBox}>
+					<Text style={styles.roleText}>Ласкаво просимо, клієнте!</Text>
+					<Text>Ви можете шукати виконавців та створювати завдання.</Text>
+				</View>
+			) : user.user_role === "worker" ? (
+				<View style={styles.roleBox}>
+					<Text style={styles.roleText}>Вітаємо, працівнику!</Text>
+					<Text>Перегляньте доступні завдання та подавайте заявки.</Text>
+				</View>
+			) : (
+				<Text style={styles.warning}>Невідома роль користувача</Text>
+			)}
+
 			{user.user_role === "customer" && !showForm && (
 				<View style={styles.buttonContainer}>
 					<Button title="🛠️ Make something done" onPress={() => setShowForm(true)} />
 				</View>
 			)}
 
-			{user.user_role === "worker" && tasks.map((task, i) => <TaskCard key={i} task={task} />)}
-
+			<View style={{ marginTop: 20 }}>
+				{(user.user_role === "worker" || user.user_role === "customer") &&
+					tasks.map((task, i) => <TaskCard key={i} task={task} username={task.username} onPress={() => navigation.navigate("taskDetails", { task })} />)}
+			</View>
 			{showForm && (
 				<TaskForm
 					title={title}
 					setTitle={setTitle}
+					description={description}
+					setDescription={setDescription}
 					price={price}
 					setPrice={setPrice}
 					place={place}
@@ -138,20 +164,6 @@ export default function DashboardScreen({ route }: Props) {
 				<View style={[styles.messageBox, messageType === "error" ? styles.errorBox : styles.successBox]}>
 					<Text style={[styles.messageText, messageType === "error" ? styles.errorText : styles.successText]}>{message}</Text>
 				</View>
-			)}
-
-			{user.user_role === "customer" ? (
-				<View style={styles.roleBox}>
-					<Text style={styles.roleText}>Ласкаво просимо, клієнте!</Text>
-					<Text>Ви можете шукати виконавців та створювати завдання.</Text>
-				</View>
-			) : user.user_role === "worker" ? (
-				<View style={styles.roleBox}>
-					<Text style={styles.roleText}>Вітаємо, працівнику!</Text>
-					<Text>Перегляньте доступні завдання та подавайте заявки.</Text>
-				</View>
-			) : (
-				<Text style={styles.warning}>Невідома роль користувача</Text>
 			)}
 		</ScrollView>
 	);

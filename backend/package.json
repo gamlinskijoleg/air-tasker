@@ -2,7 +2,7 @@
 	"name": "backend",
 	"version": "1.0.0",
 	"description": "Express + TypeScript + Supabase backend",
-	"main": "src/index.ts",
+	"main": "src/backend.ts",
 	"scripts": {
 		"dev": "nodemon"
 	},

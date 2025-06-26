@@ -1,25 +1,16 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import type { Task } from "../../App";
+import { TouchableOpacity } from "react-native";
 
 interface TaskCardProps {
-	task: {
-		id: string;
-		who_made_id: string;
-		price: number;
-		place: string;
-		day: string;
-		time: string;
-		is_taken: boolean;
-		who_took: string | null;
-		is_open: boolean;
-		type: string;
-		title: string;
-		status: "Open" | "Canceled" | "Assigned";
-	};
+	task: Task;
+	username?: string;
+	onPress?: () => void;
 }
 
-export const TaskCard = ({ task }: TaskCardProps) => {
+export const TaskCard = ({ task, username, onPress }: TaskCardProps) => {
 	const getStatusColor = () => {
 		switch (task.status) {
 			case "Open":
@@ -34,39 +25,46 @@ export const TaskCard = ({ task }: TaskCardProps) => {
 	};
 
 	return (
-		<View style={styles.card}>
-			{/* Ліва частина */}
-			<View style={styles.leftSide}>
-				<Text style={styles.header}>{task.type}</Text>
+		<TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+			<View style={styles.card}>
+				{/* Ліва частина */}
+				<View style={styles.leftSide}>
+					<Text style={styles.header}>{task.title}</Text>
 
-				<View style={styles.infoRow}>
-					<MaterialCommunityIcons name="map-marker" size={18} color="#555" />
-					<Text style={styles.infoText}>{task.place}</Text>
+					<View style={styles.infoRow}>
+						<MaterialCommunityIcons name="map-marker" size={18} color="#555" />
+						<Text style={styles.infoText}>{task.place}</Text>
+					</View>
+
+					<View style={styles.infoRow}>
+						<MaterialCommunityIcons name="calendar" size={18} color="#555" />
+						<Text style={styles.infoText}>{task.day}</Text>
+					</View>
+
+					<View style={styles.infoRow}>
+						<MaterialCommunityIcons name="clock-outline" size={18} color="#555" />
+						<Text style={styles.infoText}>{task.time}</Text>
+					</View>
+
+					<Text style={[styles.status, { color: getStatusColor() }]}>{task.status}</Text>
+					{task.description && (
+						<Text style={styles.description} numberOfLines={3}>
+							{task.description}
+						</Text>
+					)}
 				</View>
 
-				<View style={styles.infoRow}>
-					<MaterialCommunityIcons name="calendar" size={18} color="#555" />
-					<Text style={styles.infoText}>{task.day}</Text>
+				{/* Права частина */}
+				<View style={styles.rightSide}>
+					<View style={styles.priceRow}>
+						<MaterialCommunityIcons name="cash" size={20} color="#00509e" />
+						<Text style={styles.price}>{task.price} $</Text>
+					</View>
+					{username && <Text>Created by: {username}</Text>}
+					<MaterialCommunityIcons style={{ marginTop: 60 }} name="account-circle" size={45} color="#777" />
 				</View>
-
-				<View style={styles.infoRow}>
-					<MaterialCommunityIcons name="clock-outline" size={18} color="#555" />
-					<Text style={styles.infoText}>{task.time}</Text>
-				</View>
-
-				<Text style={[styles.status, { color: getStatusColor() }]}>{task.status}</Text>
 			</View>
-
-			{/* Права частина */}
-			<View style={styles.rightSide}>
-				<View style={styles.priceRow}>
-					<MaterialCommunityIcons name="cash" size={20} color="#00509e" />
-					<Text style={styles.price}>{task.price} $</Text>
-				</View>
-
-				<MaterialCommunityIcons name="account-circle" size={30} color="#777" />
-			</View>
-		</View>
+		</TouchableOpacity>
 	);
 };
 
@@ -133,5 +131,11 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#00509e",
 		marginLeft: 6,
+	},
+
+	description: {
+		marginTop: 8,
+		fontSize: 14,
+		color: "#444",
 	},
 });

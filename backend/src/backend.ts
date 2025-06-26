@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { supabase } from "./supabase";
+import { authenticate } from "./middlewares/authenticate";
 
 dotenv.config();
 
@@ -15,9 +16,9 @@ interface LoginBody {
 }
 
 app.post("/register", async (req: Request, res: Response) => {
-	const { email, password } = req.body;
+	const { email, password, username } = req.body;
 
-	if (!email || !password) {
+	if (!email || !password || !username) {
 		return res.status(400).json({ error: "Email and password are required" });
 	}
 
@@ -45,6 +46,7 @@ app.post("/register", async (req: Request, res: Response) => {
 					uid: user.id,
 					email: user.email,
 					user_role: "customer",
+					username: username,
 				},
 			],
 			{ onConflict: "uid" }
@@ -61,6 +63,7 @@ app.post("/register", async (req: Request, res: Response) => {
 		return res.status(500).json({ error: "Server error" });
 	}
 });
+
 app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 	const { email, password } = req.body;
 
@@ -107,6 +110,7 @@ app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 		return res.status(500).json({ error: "Server error" });
 	}
 });
+
 app.get("/me", async (req: Request, res: Response) => {
 	const authHeader = req.headers.authorization;
 
@@ -164,6 +168,7 @@ app.post("/set-role/worker", async (req: Request, res: Response) => {
 		return res.status(500).json({ error: "Server error" });
 	}
 });
+
 app.post("/set-role/customer", async (req: Request, res: Response) => {
 	const { uid } = req.body;
 
@@ -248,14 +253,112 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 });
 
 app.get("/tasks/all", async (req: Request, res: Response) => {
-	const { data, error } = await supabase.from("tasks").select("*");
+	try {
+		const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*");
+		if (tasksError) {
+			console.error("Fetch tasks error:", tasksError.message);
+			return res.status(500).json({ error: tasksError.message });
+		}
 
-	if (error) {
-		console.error("Fetch tasks error:", error.message);
-		return res.status(500).json({ error: error.message });
+		const userIds = Array.from(new Set(tasks.map((task) => task.who_made_id)));
+
+		const { data: users, error: usersError } = await supabase.from("users").select("uid, username").in("uid", userIds);
+
+		if (usersError) {
+			console.error("Fetch users error:", usersError.message);
+			return res.status(500).json({ error: usersError.message });
+		}
+
+		const usersMap = new Map(users.map((u) => [u.uid, u.username]));
+
+		const tasksWithUsernames = tasks.map((task) => ({
+			...task,
+			username: usersMap.get(task.who_made_id) || null,
+		}));
+
+		res.status(200).json({ tasks: tasksWithUsernames });
+	} catch (err) {
+		console.error("Server error:", err);
+		res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.get("/user/username", async (req: Request, res: Response) => {
+	const email = req.query.email as string;
+
+	if (!email) {
+		return res.status(400).json({ error: "Email query parameter is required" });
 	}
 
-	res.status(200).json({ tasks: data });
+	try {
+		const { data, error } = await supabase.from("users").select("username").eq("email", email).single();
+
+		if (error) {
+			console.error("Error fetching username:", error.message);
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		return res.status(200).json({ username: data?.username || null });
+	} catch (err) {
+		console.error("Failed to get username:", err);
+		return res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.post("/tasks/apply/:taskId", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { error } = await supabase.from("task_applications").insert({
+			task_id: taskId,
+			user_id: user.id,
+		});
+
+		if (error) {
+			console.error("Error applying for task:", error.message);
+			return res.status(500).json({ error: error.message });
+		}
+
+		res.status(200).json({ success: true, message: "Application submitted" });
+	} catch (err) {
+		console.error("Server error applying for task:", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+app.get("/tasks/user/:userId", async (req: Request, res: Response) => {
+	const { userId } = req.params;
+
+	try {
+		const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*").eq("who_made_id", userId);
+
+		if (tasksError) {
+			console.error("Fetch user tasks error:", tasksError.message);
+			return res.status(500).json({ error: tasksError.message });
+		}
+
+		const userIds = Array.from(new Set(tasks.map((task) => task.who_made_id)));
+
+		const { data: users, error: usersError } = await supabase.from("users").select("uid, username").in("uid", userIds);
+
+		if (usersError) {
+			console.error("Fetch users error:", usersError.message);
+			return res.status(500).json({ error: usersError.message });
+		}
+
+		const usersMap = new Map(users.map((u) => [u.uid, u.username]));
+
+		const tasksWithUsernames = tasks.map((task) => ({
+			...task,
+			username: usersMap.get(task.who_made_id) || null,
+		}));
+
+		res.status(200).json({ tasks: tasksWithUsernames });
+	} catch (err) {
+		console.error("Server error:", err);
+		res.status(500).json({ error: "Server error" });
+	}
 });
 
 const PORT = process.env.PORT || 3000;

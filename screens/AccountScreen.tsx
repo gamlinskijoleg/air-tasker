@@ -1,19 +1,38 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Alert, Button } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MainTabsParamList } from "../App";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useUserContext } from "../context/UserContext";
+import axios from "axios";
 
 type Props = NativeStackScreenProps<MainTabsParamList, "account">;
 
 export default function AccountScreen({ navigation }: Props) {
 	const { user, token, role, setRole } = useUserContext();
 	const { loading, error, refetch, updateRole, logout } = useCurrentUser(token);
+	const [username, setUsername] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (error) Alert.alert("Помилка", error);
 	}, [error]);
+
+	const email = user?.email;
+	useEffect(() => {
+		const fetchUsername = async () => {
+			try {
+				const res: any = await axios.get("http://localhost:3000/user/username", { params: { email } });
+				setUsername(res.data.username || null);
+			} catch (error) {
+				console.error(error);
+				setUsername(null);
+			}
+		};
+
+		if (email) {
+			fetchUsername();
+		}
+	}, [email]);
 
 	if (loading) {
 		return (
@@ -58,6 +77,9 @@ export default function AccountScreen({ navigation }: Props) {
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>Акаунт</Text>
+
+			<Text style={styles.label}>Username:</Text>
+			<Text style={styles.value}>{username}</Text>
 
 			<Text style={styles.label}>Email:</Text>
 			<Text style={styles.value}>{user.email}</Text>

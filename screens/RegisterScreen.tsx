@@ -16,35 +16,35 @@ interface RegisterResponse {
 export default function RegisterScreen({ navigation }: Props) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [username, setUsername] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const onRegister = async () => {
-		if (!email || !password) {
+		if (!email || !password || !username) {
 			Alert.alert("Помилка", "Будь ласка, заповніть всі поля");
 			return;
 		}
+
 		setLoading(true);
 		try {
 			const res = await axios.post<RegisterResponse>("http://localhost:3000/register", {
 				email,
 				password,
+				username,
 			});
 
-			const user = res.data.user;
-			const session = res.data.session;
+			const { user, session } = res.data;
 
 			if (!session) {
-				Alert.alert("Підтвердь свою електронну пошту, щоб увійти.");
+				Alert.alert("Підтвердження", "Підтвердьте email, щоб увійти.");
 				setLoading(false);
 				return;
 			}
 
-			const token = session.access_token;
-
 			Alert.alert("Успіх", "Реєстрація пройшла успішно");
-
 			setEmail("");
 			setPassword("");
+			setUsername("");
 			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
@@ -57,6 +57,9 @@ export default function RegisterScreen({ navigation }: Props) {
 	return (
 		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
 			<Text style={styles.title}>Реєстрація</Text>
+
+			<TextInput style={styles.input} placeholder="Ім’я користувача" placeholderTextColor="#6699cc" autoCapitalize="none" value={username} onChangeText={setUsername} />
+
 			<TextInput
 				style={styles.input}
 				placeholder="Email"
@@ -68,6 +71,7 @@ export default function RegisterScreen({ navigation }: Props) {
 				value={email}
 				onChangeText={setEmail}
 			/>
+
 			<TextInput
 				style={styles.input}
 				placeholder="Пароль"
@@ -78,6 +82,7 @@ export default function RegisterScreen({ navigation }: Props) {
 				value={password}
 				onChangeText={setPassword}
 			/>
+
 			<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onRegister} disabled={loading}>
 				<Text style={styles.buttonText}>{loading ? "Зачекайте..." : "Зареєструватися"}</Text>
 			</TouchableOpacity>

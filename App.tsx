@@ -12,12 +12,31 @@ import AccountScreen from "./screens/AccountScreen";
 import BrowseScreen from "./screens/BrowseScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import MyTasksScreen from "./screens/MyTasksScreen";
+import TaskDetailsScreen from "./screens/TaskDetailsScreen";
+
 import { UserProvider } from "./context/UserContext";
 import { getInitialNavigationState, persistNavigationState } from "./utils/navigationPersistence";
+
+export type Task = {
+	id: string;
+	description: string;
+	who_made_id: string;
+	price: number;
+	place: string;
+	day: string;
+	time: string;
+	is_taken: boolean;
+	who_took: string | null;
+	is_open: boolean;
+	type: string;
+	title: string;
+	status: "Open" | "Canceled" | "Assigned";
+};
 
 export type UserType = {
 	id: string;
 	email: string;
+	username: string;
 	user_role: "customer" | "worker" | null;
 };
 
@@ -26,6 +45,7 @@ export type RootStackParamList = {
 	login: undefined;
 	registration: undefined;
 	mainTabs: undefined;
+	taskDetails: { task: Task };
 };
 
 export type MainTabsParamList = {
@@ -83,6 +103,7 @@ export default function App() {
 					<Stack.Screen name="login" component={LoginScreen} options={{ title: "Вхід" }} />
 					<Stack.Screen name="registration" component={RegisterScreen} options={{ title: "Реєстрація" }} />
 					<Stack.Screen name="mainTabs" component={MainTabs} options={{ headerShown: false }} />
+					<Stack.Screen name="taskDetails" component={TaskDetailsScreen} options={{ title: "Деталі завдання" }} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</UserProvider>
