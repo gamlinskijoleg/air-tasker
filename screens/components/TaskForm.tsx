@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TextInput, Button, StyleSheet, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
 interface TaskFormProps {
@@ -46,28 +46,31 @@ export const TaskForm = ({
 			<Text style={styles.header}>Створити нове завдання</Text>
 
 			<Text style={styles.label}>Заголовок завдання</Text>
-			<TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Введіть заголовок" />
+			<TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Введіть заголовок" placeholderTextColor="#999" />
 
 			<Text style={styles.label}>Опис</Text>
-			<TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Опишіть завдання" multiline numberOfLines={4} />
+			<TextInput
+				style={[styles.input, styles.textArea]}
+				value={description}
+				onChangeText={setDescription}
+				placeholder="Опишіть завдання"
+				multiline
+				numberOfLines={4}
+				placeholderTextColor="#999"
+			/>
 
 			<Text style={styles.label}>Місце</Text>
-			<TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Введіть місце" />
+			<TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Введіть місце" placeholderTextColor="#999" />
 
 			<Text style={styles.label}>Ціна</Text>
-			<TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Введіть ціну" />
+			<TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Введіть ціну" placeholderTextColor="#999" />
 
 			<Text style={styles.label}>День</Text>
-			<TextInput style={styles.input} value={day} onChangeText={setDay} placeholder="Введіть день" />
+			<TextInput style={styles.input} value={day} onChangeText={setDay} placeholder="Введіть день" placeholderTextColor="#999" />
 
 			<Text style={styles.label}>Час доби</Text>
 			<View style={styles.pickerWrapper}>
-				<Picker
-					selectedValue={timeOfDay}
-					onValueChange={setTimeOfDay}
-					mode="dropdown" // Для iOS: "dropdown" краще виглядає
-					style={styles.picker}
-				>
+				<Picker selectedValue={timeOfDay} onValueChange={setTimeOfDay} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
 					<Picker.Item label="Morning" value="Morning" />
 					<Picker.Item label="Afternoon" value="Afternoon" />
 					<Picker.Item label="Evening" value="Evening" />
@@ -77,7 +80,7 @@ export const TaskForm = ({
 
 			<Text style={styles.label}>Тип роботи</Text>
 			<View style={styles.pickerWrapper}>
-				<Picker selectedValue={jobType} onValueChange={setJobType} mode="dropdown" style={styles.picker}>
+				<Picker selectedValue={jobType} onValueChange={setJobType} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
 					{jobTypes.map((job) => (
 						<Picker.Item key={job} label={job} value={job} />
 					))}
@@ -85,8 +88,12 @@ export const TaskForm = ({
 			</View>
 
 			<View style={styles.buttonRow}>
-				<Button title="Скасувати" onPress={onCancel} color="#999" />
-				<Button title="Відправити" onPress={onSubmit} color="#0066cc" />
+				<TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
+					<Text style={styles.cancelButtonText}>Скасувати</Text>
+				</TouchableOpacity>
+				<TouchableOpacity style={[styles.button, styles.submitButton]} onPress={onSubmit}>
+					<Text style={styles.submitButtonText}>Відправити</Text>
+				</TouchableOpacity>
 			</View>
 		</View>
 	);
@@ -95,52 +102,88 @@ export const TaskForm = ({
 const styles = StyleSheet.create({
 	formContainer: {
 		backgroundColor: "#fff",
-		padding: 20,
-		borderRadius: 8,
+		padding: 24,
+		borderRadius: 16,
 		marginVertical: 20,
 		shadowColor: "#000",
-		shadowOpacity: 0.1,
-		shadowRadius: 10,
-		elevation: 4,
+		shadowOpacity: 0.15,
+		shadowRadius: 15,
+		shadowOffset: { width: 0, height: 7 },
+		elevation: 6,
 	},
 	header: {
-		fontSize: 22,
-		fontWeight: "bold",
-		marginBottom: 16,
+		fontSize: 26,
+		fontWeight: "900",
+		marginBottom: 20,
 		color: "#00509e",
 		textAlign: "center",
+		letterSpacing: 1,
 	},
 	label: {
-		fontWeight: "600",
-		marginBottom: 6,
-		color: "#333",
+		fontWeight: "700",
+		marginBottom: 8,
+		color: "#2a2a2a",
+		fontSize: 17,
 	},
 	input: {
 		borderWidth: 1,
-		borderColor: "#ccc",
-		paddingHorizontal: 12,
-		paddingVertical: Platform.OS === "ios" ? 14 : 8,
-		borderRadius: 6,
-		marginBottom: 16,
-		fontSize: 16,
+		borderColor: "#b0b0b0",
+		paddingHorizontal: 16,
+		paddingVertical: Platform.OS === "ios" ? 16 : 10,
+		borderRadius: 10,
+		marginBottom: 18,
+		fontSize: 17,
+		color: "#222",
+		backgroundColor: "#fafafa",
+	},
+	textArea: {
+		minHeight: 100,
+		textAlignVertical: "top",
 	},
 	pickerWrapper: {
 		borderWidth: 1,
-		borderColor: "#ccc",
-		borderRadius: 6,
-		marginBottom: 16,
+		borderColor: "#b0b0b0",
+		borderRadius: 10,
+		marginBottom: 18,
 		overflow: "hidden",
+		backgroundColor: "#fafafa",
 	},
 	picker: {
-		height: 44,
+		height: 48,
 		width: "100%",
 	},
 	buttonRow: {
 		flexDirection: "row",
 		justifyContent: "space-between",
+		marginTop: 10,
 	},
-	textArea: {
-		minHeight: 80,
-		textAlignVertical: "top",
+	button: {
+		flex: 1,
+		paddingVertical: 14,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+		marginHorizontal: 6,
+		shadowColor: "#004080",
+		shadowOpacity: 0.3,
+		shadowOffset: { width: 0, height: 5 },
+		shadowRadius: 8,
+		elevation: 4,
+	},
+	cancelButton: {
+		backgroundColor: "#e1e1e1",
+	},
+	submitButton: {
+		backgroundColor: "#00509e",
+	},
+	cancelButtonText: {
+		color: "#555",
+		fontWeight: "700",
+		fontSize: 16,
+	},
+	submitButtonText: {
+		color: "#fff",
+		fontWeight: "800",
+		fontSize: 16,
 	},
 });

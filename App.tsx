@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer, InitialState } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import HomeScreen from "./screens/HomeScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -30,7 +28,9 @@ export type Task = {
 	is_open: boolean;
 	type: string;
 	title: string;
-	status: "Open" | "Canceled" | "Assigned";
+	status: "Open" | "Canceled" | "Assigned" | "Done" | "Completed" | "Applied";
+	applicationsCount?: number;
+	assignedUserId?: string;
 };
 
 export type UserType = {
@@ -45,7 +45,7 @@ export type RootStackParamList = {
 	login: undefined;
 	registration: undefined;
 	mainTabs: undefined;
-	taskDetails: { task: Task };
+	taskDetails: { task: Task; appliedTasks: any[] };
 };
 
 export type MainTabsParamList = {
@@ -72,9 +72,9 @@ function MainTabs() {
 			}}
 		>
 			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Дашборд" }} />
-			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
+			{/* <Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
 			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Задачі" }} />
-			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} />
+			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} /> */}
 			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Акаунт" }} />
 		</Tab.Navigator>
 	);
