@@ -1,8 +1,8 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { supabase } from "./supabase";
 import { authenticate } from "./middlewares/authenticate";
+import { supabase } from "./supabase";
 
 dotenv.config();
 
@@ -223,7 +223,9 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 		}
 
 		const user = data.user;
-		const { price, place, day, time, type } = req.body;
+		console.log(req.body);
+
+		const { price, place, day, time, type, description, title } = req.body;
 
 		if (!price || !place || !day || !time || !type) {
 			return res.status(400).json({ error: "Missing required fields" });
@@ -237,6 +239,8 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 				day,
 				time,
 				type,
+				description,
+				title,
 			},
 		]);
 
@@ -255,28 +259,31 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 app.get("/tasks/all", async (req: Request, res: Response) => {
 	try {
 		const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*");
+
 		if (tasksError) {
 			console.error("Fetch tasks error:", tasksError.message);
 			return res.status(500).json({ error: tasksError.message });
 		}
 
-		const userIds = Array.from(new Set(tasks.map((task) => task.who_made_id)));
+		const taskIds = tasks.map((t) => t.id);
+		const { data: applications, error: appsError } = await supabase.from("task_applications").select("task_id", { count: "exact", head: false });
 
-		const { data: users, error: usersError } = await supabase.from("users").select("uid, username").in("uid", userIds);
-
-		if (usersError) {
-			console.error("Fetch users error:", usersError.message);
-			return res.status(500).json({ error: usersError.message });
+		if (appsError) {
+			console.error("Error fetching applications:", appsError.message);
+			return res.status(500).json({ error: appsError.message });
 		}
 
-		const usersMap = new Map(users.map((u) => [u.uid, u.username]));
+		const appCountMap = applications.reduce((acc, app) => {
+			acc[app.task_id] = (acc[app.task_id] || 0) + 1;
+			return acc;
+		}, {} as Record<string, number>);
 
-		const tasksWithUsernames = tasks.map((task) => ({
+		const tasksWithCounts = tasks.map((task) => ({
 			...task,
-			username: usersMap.get(task.who_made_id) || null,
+			applicationsCount: appCountMap[task.id] || 0,
 		}));
 
-		res.status(200).json({ tasks: tasksWithUsernames });
+		res.status(200).json({ tasks: tasksWithCounts });
 	} catch (err) {
 		console.error("Server error:", err);
 		res.status(500).json({ error: "Server error" });
@@ -308,11 +315,39 @@ app.get("/user/username", async (req: Request, res: Response) => {
 app.post("/tasks/apply/:taskId", authenticate, async (req: Request, res: Response) => {
 	const { taskId } = req.params;
 	const user = (req as any).user;
+	const { bid_price } = req.body;
+
+	if (bid_price === undefined || bid_price === null) {
+		return res.status(400).json({ error: "Bid price is required" });
+	}
 
 	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("status").eq("id", taskId).single();
+
+		if (taskError || !task) {
+			return res.status(404).json({ error: "Task not found" });
+		}
+
+		const forbiddenStatuses = ["Canceled", "Assigned", "Done", "Completed"];
+
+		if (forbiddenStatuses.includes(task.status)) {
+			return res.status(400).json({ error: `Cannot bid on a task with status '${task.status}'` });
+		}
+
+		const { data: existing, error: existingError } = await supabase.from("task_applications").select("*").eq("task_id", taskId).eq("user_id", user.id).single();
+
+		if (existing) {
+			return res.status(400).json({ error: "You have already applied for this task" });
+		}
+
+		if (existingError && existingError.code !== "PGRST116") {
+			return res.status(500).json({ error: existingError.message });
+		}
+
 		const { error } = await supabase.from("task_applications").insert({
 			task_id: taskId,
 			user_id: user.id,
+			bid_price,
 		});
 
 		if (error) {
@@ -320,10 +355,10 @@ app.post("/tasks/apply/:taskId", authenticate, async (req: Request, res: Respons
 			return res.status(500).json({ error: error.message });
 		}
 
-		res.status(200).json({ success: true, message: "Application submitted" });
+		return res.status(200).json({ success: true, message: "Application submitted" });
 	} catch (err) {
 		console.error("Server error applying for task:", err);
-		res.status(500).json({ error: "Internal server error" });
+		return res.status(500).json({ error: "Internal server error" });
 	}
 });
 
@@ -338,8 +373,24 @@ app.get("/tasks/user/:userId", async (req: Request, res: Response) => {
 			return res.status(500).json({ error: tasksError.message });
 		}
 
-		const userIds = Array.from(new Set(tasks.map((task) => task.who_made_id)));
+		if (!tasks || tasks.length === 0) {
+			return res.status(200).json({ tasks: [] });
+		}
 
+		const taskIds = tasks.map((t) => t.id);
+		const { data: applications, error: appsError } = await supabase.from("task_applications").select("task_id").in("task_id", taskIds);
+
+		if (appsError) {
+			console.error("Fetch applications error:", appsError.message);
+			return res.status(500).json({ error: appsError.message });
+		}
+
+		const appCountMap = applications.reduce((acc, app) => {
+			acc[app.task_id] = (acc[app.task_id] || 0) + 1;
+			return acc;
+		}, {} as Record<string, number>);
+
+		const userIds = tasks.map((task) => task.who_made_id);
 		const { data: users, error: usersError } = await supabase.from("users").select("uid, username").in("uid", userIds);
 
 		if (usersError) {
@@ -349,15 +400,320 @@ app.get("/tasks/user/:userId", async (req: Request, res: Response) => {
 
 		const usersMap = new Map(users.map((u) => [u.uid, u.username]));
 
-		const tasksWithUsernames = tasks.map((task) => ({
-			...task,
-			username: usersMap.get(task.who_made_id) || null,
-		}));
+		const tasksWithMeta = tasks.map((task) => {
+			const applicationsCount = appCountMap[task.id] || 0;
+			const status = applicationsCount > 0 && task.status === "Open" ? "Applied" : task.status;
 
-		res.status(200).json({ tasks: tasksWithUsernames });
+			return {
+				...task,
+				username: usersMap.get(task.who_made_id) || null,
+				applicationsCount,
+				status,
+			};
+		});
+
+		res.status(200).json({ tasks: tasksWithMeta });
 	} catch (err) {
 		console.error("Server error:", err);
 		res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.get("/tasks/:taskId/applications", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+
+	interface Application {
+		user_id: string;
+		bid_price: number;
+		users?: { username: string } | null;
+	}
+
+	try {
+		const { data, error } = await supabase.from<any, any>("task_applications").select("user_id, bid_price, users(username)").eq("task_id", taskId);
+
+		if (error) {
+			console.error("Error fetching applications:", error.message);
+			return res.status(500).json({ error: error.message });
+		}
+
+		const applications = data?.map((app) => ({
+			user_id: app.user_id,
+			bid_price: app.bid_price,
+			username: app.users?.username ?? "Unknown",
+		}));
+
+		res.json(applications);
+	} catch (err) {
+		console.error("Server error:", err);
+		res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.patch("/tasks/:taskId/assign", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+	const { user_id } = req.body;
+
+	if (!user_id) {
+		return res.status(400).json({ error: "user_id is required" });
+	}
+
+	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("who_made_id").eq("id", taskId).single();
+
+		if (taskError || !task) {
+			return res.status(404).json({ error: "Task not found" });
+		}
+
+		if (task.who_made_id !== user.id) {
+			return res.status(403).json({ error: "Not authorized to assign this task" });
+		}
+
+		const { error: updateError } = await supabase.from("tasks").update({ who_took: user_id, status: "Assigned", is_open: false }).eq("id", taskId);
+
+		if (updateError) {
+			console.error("Error assigning task:", updateError.message);
+			return res.status(500).json({ error: updateError.message });
+		}
+
+		res.json({ message: "Worker assigned successfully" });
+	} catch (err) {
+		console.error("Server error:", err);
+		res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.delete("/tasks/:taskId", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("who_made_id").eq("id", taskId).single();
+
+		if (taskError || !task) {
+			return res.status(404).json({ error: "Task not found" });
+		}
+
+		if (task.who_made_id !== user.id) {
+			return res.status(403).json({ error: "Not authorized to delete this task" });
+		}
+
+		const { error: deleteError } = await supabase.from("tasks").delete().eq("id", taskId);
+
+		if (deleteError) {
+			console.error("Error deleting task:", deleteError.message);
+			return res.status(500).json({ error: deleteError.message });
+		}
+
+		res.json({ message: "Task deleted successfully" });
+	} catch (err) {
+		console.error("Server error:", err);
+		res.status(500).json({ error: "Server error" });
+	}
+});
+
+app.get("/tasks/bids/:userId", authenticate, async (req: Request, res: Response) => {
+	const { userId } = req.params;
+
+	try {
+		const { data, error } = await supabase
+			.from("task_applications")
+			.select(
+				`
+        task_id,
+        bid_price,
+        tasks (
+          id,
+          title,
+          description,
+          price,
+          place,
+          day,
+          time,
+          type,
+          status,
+          who_made_id
+        )
+      `
+			)
+			.eq("user_id", userId);
+
+		if (error) {
+			console.error("Error fetching bids:", error.message);
+			return res.status(500).json({ error: error.message });
+		}
+
+		const bidsWithTasks = data.map((bid) => ({
+			bid_price: bid.bid_price,
+			task: bid.tasks,
+		}));
+
+		res.json(bidsWithTasks);
+	} catch (err) {
+		console.error("Server error fetching bids:", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+app.patch("/tasks/:taskId/complete", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("*").eq("id", taskId).single();
+
+		if (taskError) {
+			console.error("Fetch task error:", taskError.message);
+			return res.status(500).json({ error: taskError.message });
+		}
+
+		if (!task) {
+			return res.status(404).json({ error: "Завдання не знайдено" });
+		}
+
+		if (task.status !== "Assigned" || task.who_took !== user.id) {
+			return res.status(403).json({ error: "Ви не маєте права змінювати статус цього завдання" });
+		}
+
+		const { error: updateError } = await supabase.from("tasks").update({ status: "Completed", is_taken: true, is_open: false }).eq("id", taskId);
+
+		if (updateError) {
+			console.error("Update task error:", updateError.message);
+			return res.status(500).json({ error: updateError.message });
+		}
+
+		return res.json({ success: true, message: "Завдання позначено як виконане" });
+	} catch (err) {
+		console.error("Server error:", err);
+		return res.status(500).json({ error: "Внутрішня помилка сервера" });
+	}
+});
+
+app.get("/tasks/:taskId/details", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("*").eq("id", taskId).single();
+
+		if (taskError || !task) {
+			return res.status(404).json({ error: "Завдання не знайдено" });
+		}
+
+		const { data: rawApps, error: appsError } = await supabase.from("task_applications").select("user_id, bid_price, users(username)").eq("task_id", taskId);
+
+		if (appsError) {
+			return res.status(500).json({ error: "Не вдалося отримати заявки" });
+		}
+
+		const applications = rawApps.map((app) => ({
+			user_id: app.user_id,
+			bid_price: app.bid_price,
+			username: app.users?.[0]?.username ?? "Unknown",
+		}));
+
+		const hasApplied = applications.some((app) => app.user_id === user.id);
+
+		const isAssignedToUser = task.who_took === user.id && task.status === "Assigned";
+
+		return res.json({
+			task,
+			applications,
+			meta: {
+				hasApplied,
+				isAssignedToUser,
+			},
+		});
+	} catch (err) {
+		console.error("Помилка сервера:", err);
+		return res.status(500).json({ error: "Внутрішня помилка сервера" });
+	}
+});
+
+app.patch("/tasks/:id/complete", authenticate, async (req, res) => {
+	const { id } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data, error } = await supabase.from("tasks").update({ status: "Done" }).eq("id", id).eq("who_took", user.id).select();
+
+		if (error) return res.status(500).json({ error: error.message });
+		if (!data.length) return res.status(404).json({ error: "Завдання не знайдено або не ваше" });
+
+		return res.json({ message: "Статус змінено на Done" });
+	} catch (err) {
+		return res.status(500).json({ error: "Помилка сервера" });
+	}
+});
+
+app.patch("/tasks/:id/approve", authenticate, async (req, res) => {
+	const { id } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data, error } = await supabase.from("tasks").update({ status: "Completed" }).eq("id", id).eq("who_made_id", user.id).select();
+
+		if (error) return res.status(500).json({ error: error.message });
+		if (!data.length) return res.status(404).json({ error: "Завдання не знайдено або не ваше" });
+
+		return res.json({ message: "Завдання підтверджено як виконане" });
+	} catch (err) {
+		return res.status(500).json({ error: "Помилка сервера" });
+	}
+});
+
+app.patch("/tasks/:id/cancel", authenticate, async (req, res) => {
+	const { id } = req.params;
+	const user = (req as any).user;
+
+	try {
+		const { data, error } = await supabase.from("tasks").update({ status: "Canceled" }).eq("id", id).eq("who_made_id", user.id).select();
+
+		if (error) return res.status(500).json({ error: error.message });
+		if (!data.length) return res.status(404).json({ error: "Завдання не знайдено або не ваше" });
+
+		return res.json({ message: "Завдання скасовано" });
+	} catch (err) {
+		return res.status(500).json({ error: "Помилка сервера" });
+	}
+});
+
+app.patch("/tasks/:taskId/reopen", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	console.log("Reopen request by user:", user);
+	try {
+		const { data: task, error: taskError } = await supabase.from("tasks").select("who_took, status").eq("id", taskId).single();
+
+		console.log("Task data:", task);
+
+		if (taskError) return res.status(404).json({ error: "Task not found" });
+
+		if (task.who_took !== user.id) return res.status(403).json({ error: "Forbidden: not assigned to this task" });
+
+		await supabase.from("tasks").update({ status: "Open", who_took: null }).eq("id", taskId);
+
+		res.json({ message: "Task reopened successfully" });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
+	}
+});
+
+app.patch("/tasks/:taskId/unassign", authenticate, async (req: Request, res: Response) => {
+	const { taskId } = req.params;
+	const user = (req as any).user;
+
+	if (user.user_role !== "customer") return res.status(403).json({ error: "Forbidden" });
+
+	try {
+		await supabase.from("tasks").update({ status: "Open", who_took: null }).eq("id", taskId);
+
+		res.json({ message: "Assignment cancelled successfully" });
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Internal server error" });
 	}
 });
 
