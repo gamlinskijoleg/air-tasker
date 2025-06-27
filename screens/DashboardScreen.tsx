@@ -39,7 +39,7 @@ export default function DashboardScreen({ route }: Props) {
 
 	const fetchTasks = useCallback(() => {
 		if (!user) return;
-		const url = user.user_role === "worker" ? "http://localhost:3000/tasks/all" : `http://localhost:3000/tasks/user/${user.id}`;
+		const url = user.user_role === "worker" ? "http://localhost:3000/tasks" : `http://localhost:3000/tasks/user/${user.id}`;
 		axios
 			.get(url)
 			.then((res: any) => setTasks(res.data.tasks))
@@ -62,8 +62,6 @@ export default function DashboardScreen({ route }: Props) {
 				setLoadingBids(false);
 			})
 			.catch((err) => {
-				console.error("Error loading applied tasks ", err);
-				setMessage("Помилка завантаження ваших заявок");
 				setMessageType("error");
 				setLoadingBids(false);
 			});

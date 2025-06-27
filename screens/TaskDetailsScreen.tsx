@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, View, Text, TextInput, Alert, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
-import { RouteProp, useNavigation } from "@react-navigation/native";
+import { RouteProp, useFocusEffect, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useUserContext } from "../context/UserContext";
@@ -25,31 +25,36 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	const noBiddingStatuses = ["Canceled", "Done", "Completed"];
 
-	useEffect(() => {
-		if (!task?.id) return;
-		axios
-			.get(`http://localhost:3000/tasks/${task.id}/details`, {
-				headers: { Authorization: `Bearer ${token}` },
-			})
-			.then((res: any) => setCurrentTask(res.data.task))
-			.catch(console.error);
-	}, [task?.id, token]);
-
-	useEffect(() => {
-		if (!currentTask?.id || !user) return;
-
-		setIsAssignedToUser(currentTask.who_took === user.id && (currentTask.status === "Assigned" || currentTask.status === "Done"));
-		setHasApplied(appliedTasks?.some((t: any) => t.id === currentTask.id) ?? false);
-
-		if (user.user_role === "customer") {
+	useFocusEffect(
+		useCallback(() => {
+			if (!task?.id) return;
 			axios
-				.get(`http://localhost:3000/tasks/${currentTask.id}/applications`, {
+				.get(`http://localhost:3000/tasks/${task.id}/details`, {
 					headers: { Authorization: `Bearer ${token}` },
 				})
-				.then((res: any) => setApplications(res.data))
+				.then((res: any) => setCurrentTask(res.data.task))
 				.catch(console.error);
-		}
-	}, [currentTask, user, appliedTasks, token]);
+		}, [task?.id, token])
+	);
+
+	useFocusEffect(
+		useCallback(() => {
+			if (!currentTask?.id || !user) return;
+
+			setIsAssignedToUser(currentTask.who_took === user.id && (currentTask.status === "Assigned" || currentTask.status === "Done"));
+
+			setHasApplied(appliedTasks?.some((t: any) => t.id === currentTask.id) ?? false);
+
+			if (user.user_role === "customer") {
+				axios
+					.get(`http://localhost:3000/tasks/${currentTask.id}/applications`, {
+						headers: { Authorization: `Bearer ${token}` },
+					})
+					.then((res: any) => setApplications(res.data))
+					.catch(console.error);
+			}
+		}, [currentTask, user, appliedTasks, token])
+	);
 
 	const assignWorker = async (workerId: string) => {
 		try {
@@ -304,156 +309,179 @@ const ActionButton = ({
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#f2f6fc",
+		backgroundColor: "#edf2f7",
 		paddingHorizontal: 20,
-		paddingTop: 25,
+		paddingTop: 28,
 	},
+
 	title: {
-		fontSize: 28,
-		fontWeight: "700",
+		fontSize: 32,
+		fontWeight: "900",
 		textAlign: "center",
-		marginBottom: 25,
-		color: "#222f3e",
+		marginBottom: 30,
+		color: "#1a202c",
 	},
+
 	infoBox: {
-		backgroundColor: "#ffffff",
-		borderRadius: 16,
-		padding: 20,
-		marginBottom: 25,
-		shadowColor: "#0a2342",
+		backgroundColor: "#fff",
+		borderRadius: 24,
+		padding: 24,
+		marginBottom: 28,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.15,
+		shadowRadius: 12,
+		elevation: 6,
+	},
+
+	detailRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 18,
+	},
+
+	detailIcon: {
+		marginRight: 16,
+		width: 30,
+	},
+
+	detailLabel: {
+		fontWeight: "700",
+		fontSize: 17,
+		color: "#4a5568",
+		width: 100,
+	},
+
+	detailValue: {
+		flex: 1,
+		fontSize: 17,
+		fontWeight: "600",
+		color: "#2d3748",
+	},
+
+	descriptionBox: {
+		backgroundColor: "#fff",
+		borderRadius: 24,
+		padding: 24,
+		marginBottom: 32,
+		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 6 },
 		shadowOpacity: 0.1,
 		shadowRadius: 10,
 		elevation: 4,
 	},
-	detailRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 14,
-	},
-	detailIcon: {
-		marginRight: 14,
-		width: 28,
-	},
-	detailLabel: {
-		fontWeight: "600",
-		fontSize: 15,
-		color: "#3b4a6b",
-		width: 95,
-	},
-	detailValue: {
-		flex: 1,
-		fontSize: 15,
-		color: "#1a2238",
-	},
-	descriptionBox: {
-		backgroundColor: "#fff",
-		borderRadius: 16,
-		padding: 20,
-		marginBottom: 30,
-		shadowColor: "#0a2342",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.07,
-		shadowRadius: 8,
-		elevation: 3,
-	},
+
 	descriptionLabel: {
-		fontWeight: "700",
-		fontSize: 17,
-		color: "#3b4a6b",
-		marginBottom: 8,
+		fontSize: 18,
+		fontWeight: "800",
+		color: "#2c5282",
+		marginBottom: 12,
 	},
+
 	descriptionText: {
-		fontSize: 15,
-		color: "#374151",
-		lineHeight: 24,
-		letterSpacing: 0.3,
+		fontSize: 16,
+		color: "#2d3748",
+		lineHeight: 26,
+		letterSpacing: 0.4,
 	},
+
 	sectionTitle: {
-		fontSize: 19,
-		fontWeight: "700",
-		marginBottom: 12,
-		color: "#2c3a7d",
+		fontSize: 20,
+		fontWeight: "800",
+		marginBottom: 16,
+		color: "#1a365d",
 	},
+
 	emptyText: {
-		fontSize: 15,
+		fontSize: 16,
 		fontStyle: "italic",
-		color: "#7a7a7a",
-		marginTop: 6,
-		marginBottom: 15,
+		color: "#718096",
 		textAlign: "center",
+		marginVertical: 12,
 	},
+
 	applicationCard: {
-		backgroundColor: "#fff",
-		borderRadius: 12,
-		paddingVertical: 14,
-		paddingHorizontal: 20,
-		marginBottom: 12,
+		backgroundColor: "#ffffff",
+		borderRadius: 20,
+		paddingVertical: 18,
+		paddingHorizontal: 24,
+		marginBottom: 16,
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		shadowColor: "#071a3f",
+		shadowColor: "#2a4365",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.08,
+		shadowRadius: 10,
+		elevation: 5,
+	},
+
+	applicationInfo: {
+		flexDirection: "column",
+	},
+
+	applicationUsername: {
+		fontSize: 18,
+		fontWeight: "700",
+		color: "#2c5282",
+	},
+
+	applicationBid: {
+		fontSize: 15,
+		color: "#4a5568",
+		marginTop: 4,
+	},
+
+	assignButton: {
+		padding: 8,
+	},
+
+	customerActions: {
+		marginTop: 28,
+	},
+
+	bidLabel: {
+		fontWeight: "700",
+		fontSize: 17,
+		marginBottom: 10,
+		color: "#1a202c",
+	},
+
+	bidInput: {
+		backgroundColor: "#fff",
+		borderWidth: 1.5,
+		borderColor: "#cbd5e0",
+		borderRadius: 14,
+		paddingVertical: 14,
+		paddingHorizontal: 18,
+		fontSize: 17,
+		color: "#2d3748",
+		marginBottom: 24,
+		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 3 },
 		shadowOpacity: 0.08,
 		shadowRadius: 6,
 		elevation: 3,
 	},
-	applicationInfo: {
-		flexDirection: "column",
-	},
-	applicationUsername: {
-		fontSize: 16,
-		fontWeight: "700",
-		color: "#293462",
-	},
-	applicationBid: {
-		fontSize: 14,
-		color: "#5c7080",
-		marginTop: 4,
-	},
-	assignButton: {
-		padding: 6,
-	},
-	customerActions: {
-		marginTop: 20,
-	},
-	bidLabel: {
-		fontWeight: "600",
-		fontSize: 16,
-		marginBottom: 10,
-		color: "#2a3e66",
-	},
-	bidInput: {
-		backgroundColor: "#ffffff",
-		borderColor: "#a3b1c2",
-		borderWidth: 1,
-		borderRadius: 8,
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		fontSize: 16,
-		color: "#222f3e",
-		marginBottom: 20,
-		shadowColor: "#6c7a97",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 3,
-		elevation: 2,
-	},
+
 	actionButton: {
-		paddingVertical: 14,
-		borderRadius: 30,
+		paddingVertical: 16,
+		paddingHorizontal: 24,
+		borderRadius: 32,
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#1a1f36",
+		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 5 },
 		shadowOpacity: 0.2,
-		shadowRadius: 8,
-		elevation: 4,
+		shadowRadius: 12,
+		elevation: 5,
 	},
+
 	actionButtonText: {
 		color: "#fff",
-		fontSize: 16,
-		fontWeight: "700",
-		letterSpacing: 0.5,
+		fontSize: 17,
+		fontWeight: "800",
+		textTransform: "uppercase",
+		letterSpacing: 0.6,
 	},
 });

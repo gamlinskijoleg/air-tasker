@@ -10,6 +10,7 @@ interface MeResponse {
 		id: string;
 		email: string;
 		user_role: "customer" | "worker" | null;
+		username: string;
 	};
 }
 
@@ -21,7 +22,6 @@ export function useCurrentUser(initialToken: string) {
 
 	const resolveToken = useCallback(async (): Promise<string | null> => {
 		if (initialToken) return initialToken;
-
 		try {
 			const storedToken = await AsyncStorage.getItem("token");
 			if (storedToken) {
@@ -29,45 +29,67 @@ export function useCurrentUser(initialToken: string) {
 				return storedToken;
 			}
 		} catch (e) {
-			console.error("❌ Помилка при читанні токена з AsyncStorage", e);
+			console.error("❌ Error reading token from AsyncStorage", e);
 		}
 		return null;
 	}, [initialToken, setToken]);
 
-	// Завантажуємо користувача
+	const refreshToken = useCallback(async (): Promise<string | null> => {
+		try {
+			const storedRefresh = await AsyncStorage.getItem("refreshToken");
+			if (!storedRefresh) throw new Error("No refresh token found");
+
+			const res: any = await axios.post(`${API_URL}/refresh-token`, { refreshToken: storedRefresh });
+			const newToken = res.data?.accessToken;
+
+			if (!newToken) throw new Error("No access token returned");
+
+			await AsyncStorage.setItem("token", newToken);
+			setToken(newToken);
+			return newToken;
+		} catch (e) {
+			console.error("❌ Failed to refresh token", e);
+			await AsyncStorage.removeItem("token");
+			await AsyncStorage.removeItem("refreshToken");
+			setToken("");
+			return null;
+		}
+	}, [setToken]);
+
 	const fetchUser = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 
 		try {
-			const token = await resolveToken();
-			if (!token) {
-				console.warn("Token not found, clearing user and role");
-				setUser(null);
-				setRole(null);
-				await AsyncStorage.removeItem("user");
-				await AsyncStorage.removeItem("token");
-				return;
-			}
+			let token = await resolveToken();
+			if (!token) throw new Error("Token not found");
 
-			const res = await axios.get<MeResponse>(`${API_URL}/me`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			const fetchMe = async (t: string) => {
+				return await axios.get<MeResponse>(`${API_URL}/me`, {
+					headers: { Authorization: `Bearer ${t}` },
+				});
+			};
 
-			if (!res.data || !res.data.user) {
-				throw new Error("User data not found in response");
+			let res;
+			try {
+				res = await fetchMe(token);
+			} catch (err: any) {
+				if (err.response?.status === 401) {
+					token = await refreshToken();
+					if (!token) throw new Error("Token refresh failed");
+					res = await fetchMe(token);
+				} else {
+					throw err;
+				}
 			}
 
 			const fetchedUser = res.data.user;
-
 			setUser(fetchedUser);
 			setRole(fetchedUser.user_role ?? null);
-			setUserContext(fetchedUser); // глобальний контекст 👈
-
-			// Зберігаємо юзера в AsyncStorage
+			setUserContext(fetchedUser);
 			await AsyncStorage.setItem("user", JSON.stringify(fetchedUser));
 		} catch (err: any) {
-			const msg = err.response?.data?.error || err.message || "Не вдалося завантажити користувача";
+			const msg = err.response?.data?.error || err.message || "Failed to fetch user";
 			console.error("❌ Fetch user error:", msg);
 			setError(msg);
 			setUser(null);
@@ -76,39 +98,33 @@ export function useCurrentUser(initialToken: string) {
 		} finally {
 			setLoading(false);
 		}
-	}, [resolveToken, setRole, setUser]);
+	}, [resolveToken, refreshToken, setRole, setUserContext]);
 
 	useEffect(() => {
 		fetchUser();
 	}, [fetchUser]);
 
-	// Змінити роль користувача
 	const updateRole = async (role: "worker" | "customer") => {
-		if (!user?.id) throw new Error("Користувача не знайдено", user);
-
+		if (!user?.id) throw new Error("User not found");
 		try {
 			await axios.post(`${API_URL}/set-role/${role}`, { uid: user.id });
 			await fetchUser();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Не вдалося оновити роль";
+			const msg = err.response?.data?.error || "Failed to update role";
 			console.error("❌ Update role error:", msg);
 			throw new Error(msg);
 		}
 	};
 
-	// Вийти з акаунту
 	const logout = async () => {
 		try {
 			await axios.post(`${API_URL}/logout`);
-			await AsyncStorage.removeItem("token");
-			setUser(null);
-			setRole(null);
-			setToken("");
-		} catch (err: any) {
-			const msg = err.response?.data?.error || "Помилка при виході";
-			console.error("❌ Logout error:", msg);
-			throw new Error(msg);
-		}
+		} catch {}
+		await AsyncStorage.removeItem("token");
+		await AsyncStorage.removeItem("refreshToken");
+		setUser(null);
+		setRole(null);
+		setToken("");
 	};
 
 	return {
