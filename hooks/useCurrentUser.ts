@@ -9,87 +9,66 @@ interface MeResponse {
 	user: {
 		id: string;
 		email: string;
-		user_role: "customer" | "worker" | null;
 		username: string;
+		user_role: "customer" | "worker" | null;
 	};
 }
 
 export function useCurrentUser(initialToken: string) {
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<MeResponse["user"] | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const { setRole, setToken, setUser: setUserContext } = useUserContext();
+	const { setRole, setToken, token: contextToken, setUser: setUserContext } = useUserContext();
 
 	const resolveToken = useCallback(async (): Promise<string | null> => {
 		if (initialToken) return initialToken;
+
 		try {
 			const storedToken = await AsyncStorage.getItem("token");
-			if (storedToken) {
+			if (storedToken && storedToken !== contextToken) {
 				setToken(storedToken);
-				return storedToken;
 			}
+			return storedToken;
 		} catch (e) {
-			console.error("❌ Error reading token from AsyncStorage", e);
+			console.error("❌ Помилка при читанні токена з AsyncStorage", e);
 		}
 		return null;
-	}, [initialToken, setToken]);
-
-	const refreshToken = useCallback(async (): Promise<string | null> => {
-		try {
-			const storedRefresh = await AsyncStorage.getItem("refreshToken");
-			if (!storedRefresh) throw new Error("No refresh token found");
-
-			const res: any = await axios.post(`${API_URL}/refresh-token`, { refreshToken: storedRefresh });
-			const newToken = res.data?.accessToken;
-
-			if (!newToken) throw new Error("No access token returned");
-
-			await AsyncStorage.setItem("token", newToken);
-			setToken(newToken);
-			return newToken;
-		} catch (e) {
-			console.error("❌ Failed to refresh token", e);
-			await AsyncStorage.removeItem("token");
-			await AsyncStorage.removeItem("refreshToken");
-			setToken("");
-			return null;
-		}
-	}, [setToken]);
+	}, [initialToken, setToken, contextToken]);
 
 	const fetchUser = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 
 		try {
-			let token = await resolveToken();
-			if (!token) throw new Error("Token not found");
+			const token = await resolveToken();
+			if (!token) {
+				console.warn("Token not found, clearing user and role");
+				setUser(null);
+				setRole(null);
+				await AsyncStorage.removeItem("user");
+				await AsyncStorage.removeItem("token");
+				return;
+			}
 
-			const fetchMe = async (t: string) => {
-				return await axios.get<MeResponse>(`${API_URL}/me`, {
-					headers: { Authorization: `Bearer ${t}` },
-				});
-			};
+			const res = await axios.get<MeResponse>(`${API_URL}/me`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
 
-			let res;
-			try {
-				res = await fetchMe(token);
-			} catch (err: any) {
-				if (err.response?.status === 401) {
-					token = await refreshToken();
-					if (!token) throw new Error("Token refresh failed");
-					res = await fetchMe(token);
-				} else {
-					throw err;
-				}
+			if (!res.data || !res.data.user) {
+				throw new Error("User data not found in response");
 			}
 
 			const fetchedUser = res.data.user;
+
+			console.log("Fetched user username:", fetchedUser.username);
+
 			setUser(fetchedUser);
 			setRole(fetchedUser.user_role ?? null);
 			setUserContext(fetchedUser);
 			await AsyncStorage.setItem("user", JSON.stringify(fetchedUser));
+			
 		} catch (err: any) {
-			const msg = err.response?.data?.error || err.message || "Failed to fetch user";
+			const msg = err.response?.data?.error || err.message || "Не вдалося завантажити користувача";
 			console.error("❌ Fetch user error:", msg);
 			setError(msg);
 			setUser(null);
@@ -98,19 +77,20 @@ export function useCurrentUser(initialToken: string) {
 		} finally {
 			setLoading(false);
 		}
-	}, [resolveToken, refreshToken, setRole, setUserContext]);
+	}, [resolveToken, setRole, setUserContext]);
 
 	useEffect(() => {
 		fetchUser();
 	}, [fetchUser]);
 
 	const updateRole = async (role: "worker" | "customer") => {
-		if (!user?.id) throw new Error("User not found");
+		if (!user?.id) throw new Error("Користувача не знайдено");
+
 		try {
 			await axios.post(`${API_URL}/set-role/${role}`, { uid: user.id });
 			await fetchUser();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Failed to update role";
+			const msg = err.response?.data?.error || "Не вдалося оновити роль";
 			console.error("❌ Update role error:", msg);
 			throw new Error(msg);
 		}
@@ -119,12 +99,15 @@ export function useCurrentUser(initialToken: string) {
 	const logout = async () => {
 		try {
 			await axios.post(`${API_URL}/logout`);
-		} catch {}
-		await AsyncStorage.removeItem("token");
-		await AsyncStorage.removeItem("refreshToken");
-		setUser(null);
-		setRole(null);
-		setToken("");
+			await AsyncStorage.removeItem("token");
+			setUser(null);
+			setRole(null);
+			setToken("");
+		} catch (err: any) {
+			const msg = err.response?.data?.error || "Помилка при виході";
+			console.error("❌ Logout error:", msg);
+			throw new Error(msg);
+		}
 	};
 
 	return {

@@ -43,32 +43,32 @@ export const TaskForm = ({
 }: TaskFormProps) => {
 	return (
 		<View style={styles.formContainer}>
-			<Text style={styles.header}>Створити нове завдання</Text>
+			<Text style={styles.header}>Create a New Task</Text>
 
-			<Text style={styles.label}>Заголовок завдання</Text>
-			<TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Введіть заголовок" placeholderTextColor="#999" />
+			<Text style={styles.label}>Task Title</Text>
+			<TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Enter title" placeholderTextColor="#999" />
 
-			<Text style={styles.label}>Опис</Text>
+			<Text style={styles.label}>Description</Text>
 			<TextInput
 				style={[styles.input, styles.textArea]}
 				value={description}
 				onChangeText={setDescription}
-				placeholder="Опишіть завдання"
+				placeholder="Describe the task"
 				multiline
 				numberOfLines={4}
 				placeholderTextColor="#999"
 			/>
 
-			<Text style={styles.label}>Місце</Text>
-			<TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Введіть місце" placeholderTextColor="#999" />
+			<Text style={styles.label}>Location</Text>
+			<TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Enter location" placeholderTextColor="#999" />
 
-			<Text style={styles.label}>Ціна</Text>
-			<TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Введіть ціну" placeholderTextColor="#999" />
+			<Text style={styles.label}>Price</Text>
+			<TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Enter price" placeholderTextColor="#999" />
 
-			<Text style={styles.label}>День</Text>
-			<TextInput style={styles.input} value={day} onChangeText={setDay} placeholder="Введіть день" placeholderTextColor="#999" />
+			<Text style={styles.label}>Day</Text>
+			<TextInput style={styles.input} value={day} onChangeText={setDay} placeholder="Enter day" placeholderTextColor="#999" />
 
-			<Text style={styles.label}>Час доби</Text>
+			<Text style={styles.label}>Time of Day</Text>
 			<View style={styles.pickerWrapper}>
 				<Picker selectedValue={timeOfDay} onValueChange={setTimeOfDay} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
 					<Picker.Item label="Morning" value="Morning" />
@@ -78,7 +78,7 @@ export const TaskForm = ({
 				</Picker>
 			</View>
 
-			<Text style={styles.label}>Тип роботи</Text>
+			<Text style={styles.label}>Job Type</Text>
 			<View style={styles.pickerWrapper}>
 				<Picker selectedValue={jobType} onValueChange={setJobType} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
 					{jobTypes.map((job) => (
@@ -89,10 +89,10 @@ export const TaskForm = ({
 
 			<View style={styles.buttonRow}>
 				<TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
-					<Text style={styles.cancelButtonText}>Скасувати</Text>
+					<Text style={styles.cancelButtonText}>Cancel</Text>
 				</TouchableOpacity>
 				<TouchableOpacity style={[styles.button, styles.submitButton]} onPress={onSubmit}>
-					<Text style={styles.submitButtonText}>Відправити</Text>
+					<Text style={styles.submitButtonText}>Submit</Text>
 				</TouchableOpacity>
 			</View>
 		</View>

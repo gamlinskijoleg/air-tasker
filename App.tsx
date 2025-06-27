@@ -31,6 +31,7 @@ export type Task = {
 	status: "Open" | "Canceled" | "Assigned" | "Done" | "Completed" | "Applied";
 	applicationsCount?: number;
 	assignedUserId?: string;
+	who_made_username: string;
 };
 
 export type UserType = {
@@ -72,9 +73,9 @@ function MainTabs() {
 			}}
 		>
 			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Дашборд" }} />
-			{/* <Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
+			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
 			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Задачі" }} />
-			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} /> */}
+			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} />
 			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Акаунт" }} />
 		</Tab.Navigator>
 	);

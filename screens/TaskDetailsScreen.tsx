@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { ScrollView, View, Text, TextInput, Alert, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
-import { RouteProp, useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { ScrollView, View, Text, TextInput, Alert, TouchableOpacity, StyleSheet } from "react-native";
+import { RouteProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useUserContext } from "../context/UserContext";
@@ -25,36 +25,33 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	const noBiddingStatuses = ["Canceled", "Done", "Completed"];
 
-	useFocusEffect(
-		useCallback(() => {
-			if (!task?.id) return;
+	useEffect(() => {
+		if (!task?.id) return;
+		console.log(token);
+
+		axios
+			.get(`http://localhost:3000/tasks/${task.id}/details`, {
+				headers: { Authorization: `Bearer ${token}` },
+			})
+			.then((res: any) => setCurrentTask(res.data.task))
+			.catch(console.error);
+	}, [task?.id, token]);
+
+	useEffect(() => {
+		if (!currentTask?.id || !user) return;
+
+		setIsAssignedToUser(currentTask.who_took === user.id && (currentTask.status === "Assigned" || currentTask.status === "Done"));
+		setHasApplied(appliedTasks?.some((t: any) => t.id === currentTask.id) ?? false);
+
+		if (user.user_role === "customer") {
 			axios
-				.get(`http://localhost:3000/tasks/${task.id}/details`, {
+				.get(`http://localhost:3000/tasks/${currentTask.id}/applications`, {
 					headers: { Authorization: `Bearer ${token}` },
 				})
-				.then((res: any) => setCurrentTask(res.data.task))
+				.then((res: any) => setApplications(res.data))
 				.catch(console.error);
-		}, [task?.id, token])
-	);
-
-	useFocusEffect(
-		useCallback(() => {
-			if (!currentTask?.id || !user) return;
-
-			setIsAssignedToUser(currentTask.who_took === user.id && (currentTask.status === "Assigned" || currentTask.status === "Done"));
-
-			setHasApplied(appliedTasks?.some((t: any) => t.id === currentTask.id) ?? false);
-
-			if (user.user_role === "customer") {
-				axios
-					.get(`http://localhost:3000/tasks/${currentTask.id}/applications`, {
-						headers: { Authorization: `Bearer ${token}` },
-					})
-					.then((res: any) => setApplications(res.data))
-					.catch(console.error);
-			}
-		}, [currentTask, user, appliedTasks, token])
-	);
+		}
+	}, [currentTask, user, appliedTasks, token]);
 
 	const assignWorker = async (workerId: string) => {
 		try {
@@ -132,23 +129,22 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-			<Text style={styles.title}>{currentTask.title}</Text>
+			<Text>{JSON.stringify(currentTask, null, 2)}</Text>
+			<Text style={styles.header}>{currentTask.title}</Text>
 
-			<View style={styles.infoBox}>
-				<DetailRow icon="briefcase-outline" label="Тип" value={currentTask.type} />
-				<DetailRow icon="map-marker" label="Місце" value={currentTask.place} />
-				<DetailRow icon="cash" label="Ціна" value={`${currentTask.price} грн`} />
-				<DetailRow icon="calendar" label="Дата" value={currentTask.day} />
-				<DetailRow icon="clock-outline" label="Час" value={currentTask.time} />
-				<DetailRow icon="information-outline" label="Статус" value={currentTask.status} color={getStatusColor(currentTask.status)} />
+			<View style={styles.infoSection}>
+				<InfoRow label="Posted by" value={`${task.who_made_username}`} />
+				<InfoRow label="Location" value={currentTask.place} />
+				<InfoRow label="Target Date" value={`${currentTask.day} ${currentTask.time}`} />
+				<InfoRow label="Original Bid" value={`${currentTask.price} $`} />
 			</View>
 
-			{!!currentTask.description && (
-				<View style={styles.descriptionBox}>
-					<Text style={styles.descriptionLabel}>Опис:</Text>
-					<Text style={styles.descriptionText}>{currentTask.description}</Text>
+			{currentTask.description ? (
+				<View style={styles.detailsSection}>
+					<Text style={styles.detailsHeader}>Details</Text>
+					<Text style={styles.detailsText}>{currentTask.description}</Text>
 				</View>
-			)}
+			) : null}
 
 			{user?.user_role === "customer" && (
 				<>
@@ -221,7 +217,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 					)}
 
 					<View style={{ marginTop: 30 }}>
-						<ActionButton text="  Видалити завдання" onPress={deleteTask} backgroundColor="#b02a37" />
+						<ActionButton text="Видалити завдання" onPress={deleteTask} backgroundColor="#b02a37" />
 					</View>
 				</>
 			)}
@@ -232,7 +228,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 						<Text style={styles.emptyText}>На це завдання більше не можна подавати ставки.</Text>
 					) : isAssignedToUser ? (
 						<>
-							<ActionButton text={loading ? "Зачекайте..." : " Позначити як виконане"} onPress={markTaskAsDone} disabled={loading} backgroundColor="#2f9e44" />
+							<ActionButton text={loading ? "Зачекайте..." : "Позначити як виконане"} onPress={markTaskAsDone} disabled={loading} backgroundColor="#2f9e44" />
 							<ActionButton
 								text={loading ? "Зачекайте..." : "↩ Позначити як не виконане"}
 								onPress={markTaskAsUndone}
@@ -268,6 +264,13 @@ const DetailRow = ({ icon, label, value, color = "#333" }: { icon: string; label
 		<MaterialCommunityIcons name={icon} size={20} color="#00509e" style={styles.detailIcon} />
 		<Text style={styles.detailLabel}>{label}:</Text>
 		<Text style={[styles.detailValue, { color }]}>{value}</Text>
+	</View>
+);
+
+const InfoRow = ({ label, value }: { label: string; value: string }) => (
+	<View style={styles.infoRow}>
+		<Text style={styles.infoLabel}>{label}:</Text>
+		<Text style={styles.infoValue}>{value}</Text>
 	</View>
 );
 
@@ -307,181 +310,175 @@ const ActionButton = ({
 );
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#edf2f7",
-		paddingHorizontal: 20,
-		paddingTop: 28,
+	sectionTitle: {
+		fontSize: 19,
+		fontWeight: "700",
+		marginBottom: 12,
+		color: "#2c3a7d",
 	},
-
-	title: {
-		fontSize: 32,
-		fontWeight: "900",
-		textAlign: "center",
-		marginBottom: 30,
-		color: "#1a202c",
-	},
-
-	infoBox: {
-		backgroundColor: "#fff",
-		borderRadius: 24,
-		padding: 24,
-		marginBottom: 28,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 8 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 6,
-	},
-
 	detailRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 18,
+		marginBottom: 14,
 	},
-
 	detailIcon: {
-		marginRight: 16,
-		width: 30,
+		marginRight: 14,
+		width: 28,
 	},
-
 	detailLabel: {
-		fontWeight: "700",
-		fontSize: 17,
-		color: "#4a5568",
-		width: 100,
+		fontWeight: "600",
+		fontSize: 15,
+		color: "#3b4a6b",
+		width: 95,
 	},
-
 	detailValue: {
 		flex: 1,
-		fontSize: 17,
-		fontWeight: "600",
-		color: "#2d3748",
+		fontSize: 15,
+		color: "#1a2238",
 	},
-
-	descriptionBox: {
-		backgroundColor: "#fff",
-		borderRadius: 24,
-		padding: 24,
-		marginBottom: 32,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 6 },
-		shadowOpacity: 0.1,
-		shadowRadius: 10,
-		elevation: 4,
-	},
-
-	descriptionLabel: {
-		fontSize: 18,
-		fontWeight: "800",
-		color: "#2c5282",
-		marginBottom: 12,
-	},
-
-	descriptionText: {
-		fontSize: 16,
-		color: "#2d3748",
-		lineHeight: 26,
-		letterSpacing: 0.4,
-	},
-
-	sectionTitle: {
-		fontSize: 20,
-		fontWeight: "800",
-		marginBottom: 16,
-		color: "#1a365d",
-	},
-
-	emptyText: {
-		fontSize: 16,
-		fontStyle: "italic",
-		color: "#718096",
+	header: {
+		fontSize: 28,
+		fontWeight: "700",
 		textAlign: "center",
-		marginVertical: 12,
+		marginBottom: 30,
+		color: "#222f3e",
 	},
-
-	applicationCard: {
+	infoSection: {
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		padding: 20,
+		marginBottom: 25,
+		shadowColor: "#0a2342",
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.12,
+		shadowRadius: 8,
+		elevation: 5,
+	},
+	infoRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		paddingVertical: 8,
+		borderBottomWidth: 1,
+		borderBottomColor: "#e0e0e0",
+	},
+	infoLabel: {
+		fontWeight: "600",
+		fontSize: 16,
+		color: "#3b4a6b",
+	},
+	infoValue: {
+		fontSize: 16,
+		color: "#1a2238",
+		maxWidth: "65%",
+		textAlign: "right",
+	},
+	detailsSection: {
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		padding: 20,
+		shadowColor: "#0a2342",
+		shadowOffset: { width: 0, height: 3 },
+		shadowOpacity: 0.1,
+		shadowRadius: 6,
+		elevation: 3,
+	},
+	detailsHeader: {
+		fontSize: 18,
+		fontWeight: "700",
+		marginBottom: 12,
+		color: "#2c3a7d",
+	},
+	detailsText: {
+		fontSize: 16,
+		color: "#374151",
+		lineHeight: 24,
+		letterSpacing: 0.3,
+	},
+	container: {
+		flex: 1,
+		backgroundColor: "#f2f6fc",
+		paddingHorizontal: 20,
+		paddingTop: 25,
+	},
+	bidLabel: {
+		fontWeight: "600",
+		fontSize: 16,
+		marginBottom: 10,
+		color: "#2a3e66",
+	},
+	bidInput: {
 		backgroundColor: "#ffffff",
-		borderRadius: 20,
-		paddingVertical: 18,
-		paddingHorizontal: 24,
-		marginBottom: 16,
+		borderColor: "#a3b1c2",
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		fontSize: 16,
+		color: "#222f3e",
+		marginBottom: 20,
+		shadowColor: "#6c7a97",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 3,
+		elevation: 2,
+	},
+	applicationCard: {
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		paddingVertical: 14,
+		paddingHorizontal: 20,
+		marginBottom: 12,
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		shadowColor: "#2a4365",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.08,
-		shadowRadius: 10,
-		elevation: 5,
-	},
-
-	applicationInfo: {
-		flexDirection: "column",
-	},
-
-	applicationUsername: {
-		fontSize: 18,
-		fontWeight: "700",
-		color: "#2c5282",
-	},
-
-	applicationBid: {
-		fontSize: 15,
-		color: "#4a5568",
-		marginTop: 4,
-	},
-
-	assignButton: {
-		padding: 8,
-	},
-
-	customerActions: {
-		marginTop: 28,
-	},
-
-	bidLabel: {
-		fontWeight: "700",
-		fontSize: 17,
-		marginBottom: 10,
-		color: "#1a202c",
-	},
-
-	bidInput: {
-		backgroundColor: "#fff",
-		borderWidth: 1.5,
-		borderColor: "#cbd5e0",
-		borderRadius: 14,
-		paddingVertical: 14,
-		paddingHorizontal: 18,
-		fontSize: 17,
-		color: "#2d3748",
-		marginBottom: 24,
-		shadowColor: "#000",
+		shadowColor: "#071a3f",
 		shadowOffset: { width: 0, height: 3 },
 		shadowOpacity: 0.08,
 		shadowRadius: 6,
 		elevation: 3,
 	},
-
+	applicationInfo: {
+		flexDirection: "column",
+	},
+	applicationUsername: {
+		fontSize: 16,
+		fontWeight: "700",
+		color: "#293462",
+	},
+	applicationBid: {
+		fontSize: 14,
+		color: "#5c7080",
+		marginTop: 4,
+	},
+	assignButton: {
+		padding: 6,
+	},
+	customerActions: {
+		marginTop: 20,
+	},
+	emptyText: {
+		fontSize: 15,
+		fontStyle: "italic",
+		color: "#7a7a7a",
+		marginTop: 6,
+		marginBottom: 15,
+		textAlign: "center",
+	},
 	actionButton: {
-		paddingVertical: 16,
-		paddingHorizontal: 24,
-		borderRadius: 32,
+		paddingVertical: 14,
+		borderRadius: 30,
 		alignItems: "center",
 		justifyContent: "center",
-		shadowColor: "#000",
+		shadowColor: "#1a1f36",
 		shadowOffset: { width: 0, height: 5 },
 		shadowOpacity: 0.2,
-		shadowRadius: 12,
-		elevation: 5,
+		shadowRadius: 8,
+		elevation: 4,
 	},
-
 	actionButtonText: {
 		color: "#fff",
-		fontSize: 17,
-		fontWeight: "800",
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
+		fontSize: 16,
+		fontWeight: "700",
+		letterSpacing: 0.5,
 	},
 });

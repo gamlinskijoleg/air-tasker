@@ -31,7 +31,7 @@ export default function LoginScreen({ navigation }: Props) {
 		setLoading(true);
 
 		try {
-			const res = await axios.post<LoginResponse>("http://localhost:3000/auth/login", { email, password });
+			const res = await axios.post<LoginResponse>("http://localhost:3000/login", { email, password });
 
 			const user = res.data.user;
 			const token = res.data.session.access_token;

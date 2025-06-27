@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { supabase } from "../config/supabaseClient";
+import { supabase } from "../supabase";
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
 	const authHeader = req.headers.authorization;

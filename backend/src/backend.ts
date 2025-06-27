@@ -113,7 +113,6 @@ app.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
 
 app.get("/me", async (req: Request, res: Response) => {
 	const authHeader = req.headers.authorization;
-
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
 		return res.status(401).json({ error: "Unauthorized: No token provided" });
 	}
@@ -129,7 +128,7 @@ app.get("/me", async (req: Request, res: Response) => {
 
 		const user = data.user;
 
-		const { data: userRow, error: roleError } = await supabase.from("users").select("user_role").eq("uid", user.id).single();
+		const { data: userRow, error: roleError } = await supabase.from("users").select("user_role, username").eq("uid", user.id).single();
 
 		if (roleError) {
 			return res.status(500).json({ error: roleError.message });
@@ -137,8 +136,10 @@ app.get("/me", async (req: Request, res: Response) => {
 
 		return res.status(200).json({
 			user: {
-				...user,
+				id: user.id,
+				email: user.email,
 				user_role: userRow.user_role,
+				username: userRow.username,
 			},
 		});
 	} catch (err) {
@@ -265,7 +266,7 @@ app.get("/tasks/all", async (req: Request, res: Response) => {
 			return res.status(500).json({ error: tasksError.message });
 		}
 
-		const taskIds = tasks.map((t) => t.id);
+		const taskIds = tasks.map((t: any) => t.id);
 		const { data: applications, error: appsError } = await supabase.from("task_applications").select("task_id", { count: "exact", head: false });
 
 		if (appsError) {
@@ -273,12 +274,12 @@ app.get("/tasks/all", async (req: Request, res: Response) => {
 			return res.status(500).json({ error: appsError.message });
 		}
 
-		const appCountMap = applications.reduce((acc, app) => {
+		const appCountMap = applications.reduce((acc: any, app: any) => {
 			acc[app.task_id] = (acc[app.task_id] || 0) + 1;
 			return acc;
 		}, {} as Record<string, number>);
 
-		const tasksWithCounts = tasks.map((task) => ({
+		const tasksWithCounts = tasks.map((task: any) => ({
 			...task,
 			applicationsCount: appCountMap[task.id] || 0,
 		}));
@@ -366,18 +367,18 @@ app.get("/tasks/user/:userId", async (req: Request, res: Response) => {
 	const { userId } = req.params;
 
 	try {
-		const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*").eq("who_made_id", userId);
+		const { data: tasks, error } = await supabase.from("tasks").select("*, users!inner(uid, username)").eq("who_made_id", userId);
 
-		if (tasksError) {
-			console.error("Fetch user tasks error:", tasksError.message);
-			return res.status(500).json({ error: tasksError.message });
+		if (error) {
+			console.error("Fetch user tasks error:", error.message);
+			return res.status(500).json({ error: error.message });
 		}
 
 		if (!tasks || tasks.length === 0) {
 			return res.status(200).json({ tasks: [] });
 		}
 
-		const taskIds = tasks.map((t) => t.id);
+		const taskIds = tasks.map((t: any) => t.id);
 		const { data: applications, error: appsError } = await supabase.from("task_applications").select("task_id").in("task_id", taskIds);
 
 		if (appsError) {
@@ -385,28 +386,18 @@ app.get("/tasks/user/:userId", async (req: Request, res: Response) => {
 			return res.status(500).json({ error: appsError.message });
 		}
 
-		const appCountMap = applications.reduce((acc, app) => {
+		const appCountMap = applications.reduce((acc: any, app: any) => {
 			acc[app.task_id] = (acc[app.task_id] || 0) + 1;
 			return acc;
 		}, {} as Record<string, number>);
 
-		const userIds = tasks.map((task) => task.who_made_id);
-		const { data: users, error: usersError } = await supabase.from("users").select("uid, username").in("uid", userIds);
-
-		if (usersError) {
-			console.error("Fetch users error:", usersError.message);
-			return res.status(500).json({ error: usersError.message });
-		}
-
-		const usersMap = new Map(users.map((u) => [u.uid, u.username]));
-
-		const tasksWithMeta = tasks.map((task) => {
+		const tasksWithMeta = tasks.map((task: any) => {
 			const applicationsCount = appCountMap[task.id] || 0;
 			const status = applicationsCount > 0 && task.status === "Open" ? "Applied" : task.status;
 
 			return {
 				...task,
-				username: usersMap.get(task.who_made_id) || null,
+				username: task.users?.username || null,
 				applicationsCount,
 				status,
 			};
@@ -436,7 +427,7 @@ app.get("/tasks/:taskId/applications", authenticate, async (req: Request, res: R
 			return res.status(500).json({ error: error.message });
 		}
 
-		const applications = data?.map((app) => ({
+		const applications = data?.map((app: Application) => ({
 			user_id: app.user_id,
 			bid_price: app.bid_price,
 			username: app.users?.username ?? "Unknown",
@@ -543,7 +534,7 @@ app.get("/tasks/bids/:userId", authenticate, async (req: Request, res: Response)
 			return res.status(500).json({ error: error.message });
 		}
 
-		const bidsWithTasks = data.map((bid) => ({
+		const bidsWithTasks = data.map((bid: any) => ({
 			bid_price: bid.bid_price,
 			task: bid.tasks,
 		}));
@@ -606,13 +597,13 @@ app.get("/tasks/:taskId/details", authenticate, async (req: Request, res: Respon
 			return res.status(500).json({ error: "Не вдалося отримати заявки" });
 		}
 
-		const applications = rawApps.map((app) => ({
+		const applications = rawApps.map((app: any) => ({
 			user_id: app.user_id,
 			bid_price: app.bid_price,
 			username: app.users?.[0]?.username ?? "Unknown",
 		}));
 
-		const hasApplied = applications.some((app) => app.user_id === user.id);
+		const hasApplied = applications.some((app: any) => app.user_id === user.id);
 
 		const isAssignedToUser = task.who_took === user.id && task.status === "Assigned";
 

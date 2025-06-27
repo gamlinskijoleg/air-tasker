@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import type { Task } from "../../App";
 
@@ -46,20 +46,18 @@ export const TaskCard = ({ task, username, onPress }: TaskCardProps) => {
 						<Text style={styles.infoText}>{task.time}</Text>
 					</View>
 
-					<Text style={[styles.status, { color: getStatusColor() }]}>{task.status}</Text>
-					{task.description && (
-						<Text style={styles.description} numberOfLines={3}>
-							{task.description}
-						</Text>
-					)}
-					{typeof task.applicationsCount === "number" && (
-						<View style={styles.infoRow}>
-							<MaterialCommunityIcons name="account-multiple-outline" size={18} color="#555" />
-							<Text style={styles.infoText}>
-								{task.applicationsCount} {task.applicationsCount === 1 ? "заявка" : "заявок"}
-							</Text>
-						</View>
-					)}
+					<View style={styles.statusApplicationsRow}>
+						<Text style={[styles.status, { color: getStatusColor() }]}>{task.status}</Text>
+
+						{typeof task.applicationsCount === "number" && (
+							<View style={styles.applicationsInfoRow}>
+								<MaterialCommunityIcons name="account-multiple-outline" size={18} color="#555" />
+								<Text style={styles.infoText}>
+									{task.applicationsCount} {task.applicationsCount === 1 ? "application" : "applications"}
+								</Text>
+							</View>
+						)}
+					</View>
 				</View>
 
 				<View style={styles.rightSide}>
@@ -67,7 +65,7 @@ export const TaskCard = ({ task, username, onPress }: TaskCardProps) => {
 						<MaterialCommunityIcons name="cash" size={20} color="#00509e" />
 						<Text style={styles.price}>{task.price} $</Text>
 					</View>
-					<Text style={styles.description}>Created by: {username}</Text>
+					<Text style={styles.description}>Created by: {task.who_made_username || "Unknown"}</Text>
 
 					<MaterialCommunityIcons style={{ marginTop: 10 }} name="account-circle" size={45} color="#777" />
 				</View>
@@ -77,22 +75,21 @@ export const TaskCard = ({ task, username, onPress }: TaskCardProps) => {
 };
 
 const styles = StyleSheet.create({
-	deleteButton: {
-		marginTop: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-		backgroundColor: "#e63946",
-		borderRadius: 5,
+	statusApplicationsRow: {
+		flexDirection: "row",
+		alignItems: "center",
 	},
-	deleteText: {
-		color: "#fff",
-		fontWeight: "bold",
-		fontSize: 14,
-		textAlign: "center",
+
+	applicationsInfoRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		marginLeft: 12,
 	},
+
 	card: {
 		flexDirection: "row",
-		backgroundColor: "#012333",
+		backgroundColor: "#F0F0F0",
 		marginBottom: 14,
 		padding: 16,
 		borderRadius: 12,
@@ -101,8 +98,6 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 6,
 		elevation: 4,
-		borderLeftWidth: 5,
-		borderLeftColor: "#50FFA1",
 		justifyContent: "space-between",
 		alignItems: "flex-start",
 	},
@@ -114,27 +109,32 @@ const styles = StyleSheet.create({
 	header: {
 		fontSize: 18,
 		fontWeight: "bold",
-		color: "#fff",
-		marginBottom: 8,
+		color: "#012333",
+		marginBottom: 10,
 	},
 
 	infoRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 4,
+		marginBottom: 10,
 	},
 
 	infoText: {
 		fontSize: 15,
-		color: "#fff",
+		color: "#3E4A50",
 		marginLeft: 6,
 	},
 
 	status: {
 		fontWeight: "600",
-		marginTop: 8,
 		fontSize: 15,
-		color: "#50FFA1",
+		color: "#012333",
+	},
+
+	description: {
+		fontSize: 14,
+		color: "#3E4A50",
+		marginBottom: 10,
 	},
 
 	rightSide: {
@@ -151,14 +151,23 @@ const styles = StyleSheet.create({
 	price: {
 		fontSize: 16,
 		fontWeight: "bold",
-		color: "#fff",
+		color: "#012333",
 		marginLeft: 6,
 	},
 
-	description: {
-		marginTop: 8,
-		fontSize: 14,
+	deleteButton: {
+		marginTop: 10,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
+		backgroundColor: "#e63946",
+		borderRadius: 5,
+	},
+
+	deleteText: {
 		color: "#fff",
+		fontWeight: "bold",
+		fontSize: 14,
+		textAlign: "center",
 	},
 
 	markDoneButton: {
