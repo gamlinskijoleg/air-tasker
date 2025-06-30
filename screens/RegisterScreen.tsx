@@ -21,7 +21,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 	const onRegister = async () => {
 		if (!email || !password || !username) {
-			Alert.alert("Помилка", "Будь ласка, заповніть всі поля");
+			Alert.alert("Error", "Please fill in all fields");
 			return;
 		}
 
@@ -36,19 +36,19 @@ export default function RegisterScreen({ navigation }: Props) {
 			const { user, session } = res.data;
 
 			if (!session) {
-				Alert.alert("Підтвердження", "Підтвердьте email, щоб увійти.");
+				Alert.alert("Confirmation", "Please confirm your email to log in.");
 				setLoading(false);
 				return;
 			}
 
-			Alert.alert("Успіх", "Реєстрація пройшла успішно");
+			Alert.alert("Success", "Registration was successful");
 			setEmail("");
 			setPassword("");
 			setUsername("");
 			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
-			Alert.alert("Помилка реєстрації", error.response?.data?.error || error.message || "Щось пішло не так");
+			Alert.alert("Registration Error", error.response?.data?.error || error.message || "Something went wrong");
 		} finally {
 			setLoading(false);
 		}
@@ -56,13 +56,13 @@ export default function RegisterScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
-			<Text style={styles.title}>Реєстрація</Text>
+			<Text style={styles.title}>Registration</Text>
 
-			<TextInput style={styles.input} placeholder="Ім’я користувача" placeholderTextColor="#6699cc" autoCapitalize="none" value={username} onChangeText={setUsername} />
+			<TextInput style={styles.input} placeholder="Username" placeholderTextColor="#6699cc" autoCapitalize="none" value={username} onChangeText={setUsername} />
 
 			<TextInput
 				style={styles.input}
-				placeholder="Email"
+				placeholder="Password"
 				placeholderTextColor="#6699cc"
 				keyboardType="email-address"
 				autoCapitalize="none"
@@ -74,7 +74,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 			<TextInput
 				style={styles.input}
-				placeholder="Пароль"
+				placeholder="Password"
 				placeholderTextColor="#6699cc"
 				secureTextEntry
 				autoComplete="password"
@@ -84,7 +84,7 @@ export default function RegisterScreen({ navigation }: Props) {
 			/>
 
 			<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onRegister} disabled={loading}>
-				<Text style={styles.buttonText}>{loading ? "Зачекайте..." : "Зареєструватися"}</Text>
+				<Text style={styles.buttonText}>{loading ? "Wait..." : "Register"}</Text>
 			</TouchableOpacity>
 		</KeyboardAvoidingView>
 	);

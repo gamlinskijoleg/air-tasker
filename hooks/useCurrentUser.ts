@@ -30,7 +30,7 @@ export function useCurrentUser(initialToken: string) {
 			}
 			return storedToken;
 		} catch (e) {
-			console.error("❌ Помилка при читанні токена з AsyncStorage", e);
+			console.error("Error while reading token from AsyncStorage", e);
 		}
 		return null;
 	}, [initialToken, setToken, contextToken]);
@@ -57,19 +57,15 @@ export function useCurrentUser(initialToken: string) {
 			if (!res.data || !res.data.user) {
 				throw new Error("User data not found in response");
 			}
-
 			const fetchedUser = res.data.user;
-
-			console.log("Fetched user username:", fetchedUser.username);
 
 			setUser(fetchedUser);
 			setRole(fetchedUser.user_role ?? null);
 			setUserContext(fetchedUser);
 			await AsyncStorage.setItem("user", JSON.stringify(fetchedUser));
-			
 		} catch (err: any) {
 			const msg = err.response?.data?.error || err.message || "Не вдалося завантажити користувача";
-			console.error("❌ Fetch user error:", msg);
+			console.error("Fetch user error:", msg);
 			setError(msg);
 			setUser(null);
 			setRole(null);
@@ -84,14 +80,14 @@ export function useCurrentUser(initialToken: string) {
 	}, [fetchUser]);
 
 	const updateRole = async (role: "worker" | "customer") => {
-		if (!user?.id) throw new Error("Користувача не знайдено");
+		if (!user?.id) throw new Error("User not found");
 
 		try {
 			await axios.post(`${API_URL}/set-role/${role}`, { uid: user.id });
 			await fetchUser();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Не вдалося оновити роль";
-			console.error("❌ Update role error:", msg);
+			const msg = err.response?.data?.error || "Cant update role";
+			console.error("Update role error:", msg);
 			throw new Error(msg);
 		}
 	};
@@ -104,8 +100,8 @@ export function useCurrentUser(initialToken: string) {
 			setRole(null);
 			setToken("");
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Помилка при виході";
-			console.error("❌ Logout error:", msg);
+			const msg = err.response?.data?.error || "Error while logging out";
+			console.error("Logout error:", msg);
 			throw new Error(msg);
 		}
 	};

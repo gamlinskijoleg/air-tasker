@@ -72,11 +72,11 @@ function MainTabs() {
 				tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
 			}}
 		>
-			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Дашборд" }} />
-			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Пошук" }} />
-			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Задачі" }} />
-			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Повідомлення" }} />
-			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Акаунт" }} />
+			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Dashboard", headerShown: false }} />
+			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Find", headerShown: false }} />
+			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Tasks", headerShown: false }} />
+			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Messages", headerShown: false }} />
+			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Account", headerShown: false }} />
 		</Tab.Navigator>
 	);
 }
@@ -99,12 +99,12 @@ export default function App() {
 	return (
 		<UserProvider>
 			<NavigationContainer initialState={initialState} onStateChange={(state) => persistNavigationState(state)}>
-				<Stack.Navigator initialRouteName="home" screenOptions={{ headerTitleAlign: "center" }}>
-					<Stack.Screen name="home" component={HomeScreen} options={{ title: "Головна" }} />
-					<Stack.Screen name="login" component={LoginScreen} options={{ title: "Вхід" }} />
-					<Stack.Screen name="registration" component={RegisterScreen} options={{ title: "Реєстрація" }} />
+				<Stack.Navigator initialRouteName="home" screenOptions={{ headerShown: false }}>
+					<Stack.Screen name="home" component={HomeScreen} options={{ title: "Main", headerShown: false }} />
+					<Stack.Screen name="login" component={LoginScreen} options={{ title: "Login", headerShown: false }} />
+					<Stack.Screen name="registration" component={RegisterScreen} options={{ title: "Register", headerShown: false }} />
 					<Stack.Screen name="mainTabs" component={MainTabs} options={{ headerShown: false }} />
-					<Stack.Screen name="taskDetails" component={TaskDetailsScreen} options={{ title: "Деталі завдання" }} />
+					<Stack.Screen name="taskDetails" component={TaskDetailsScreen} options={{ title: "Task details", headerShown: false }} />
 				</Stack.Navigator>
 			</NavigationContainer>
 		</UserProvider>

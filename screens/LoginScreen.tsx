@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation }: Props) {
 			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
-			Alert.alert("Помилка входу", error.response?.data?.error || error.message || "Щось пішло не так");
+			Alert.alert("Login Error", error.response?.data?.error || error.message || "Something went wrong");
 		} finally {
 			setLoading(false);
 		}
@@ -55,7 +55,7 @@ export default function LoginScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-			<Text style={styles.title}>Вхід</Text>
+			<Text style={styles.title}>Log in</Text>
 
 			<TextInput
 				style={styles.input}
@@ -81,7 +81,7 @@ export default function LoginScreen({ navigation }: Props) {
 			/>
 
 			<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onLogin} disabled={loading}>
-				<Text style={styles.buttonText}>{loading ? "Зачекайте..." : "Увійти"}</Text>
+				<Text style={styles.buttonText}>{loading ? "Wait..." : "Log in"}</Text>
 			</TouchableOpacity>
 		</KeyboardAvoidingView>
 	);

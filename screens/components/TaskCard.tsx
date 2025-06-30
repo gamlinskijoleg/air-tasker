@@ -5,11 +5,10 @@ import type { Task } from "../../App";
 
 interface TaskCardProps {
 	task: Task;
-	username?: string;
 	onPress?: () => void;
 }
 
-export const TaskCard = ({ task, username, onPress }: TaskCardProps) => {
+export const TaskCard = ({ task, onPress }: TaskCardProps) => {
 	const getStatusColor = () => {
 		switch (task.status) {
 			case "Open":

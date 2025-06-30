@@ -57,7 +57,7 @@ export const AppliedTaskCard = ({ task, bidPrice, username, onPress }: AppliedTa
 						<View style={styles.infoRow}>
 							<MaterialCommunityIcons name="account-multiple-outline" size={18} color="#555" />
 							<Text style={styles.infoText}>
-								{task.applicationsCount} {task.applicationsCount === 1 ? "заявка" : "заявок"}
+								{task.applicationsCount} {task.applicationsCount === 1 ? "application" : "applications"}
 							</Text>
 						</View>
 					)}
@@ -70,7 +70,7 @@ export const AppliedTaskCard = ({ task, bidPrice, username, onPress }: AppliedTa
 					</View>
 
 					<View style={{ marginTop: 6 }}>
-						<Text style={{ fontWeight: "600", color: "#2a9d8f" }}>Ваша ставка: {bidPrice} $</Text>
+						<Text style={{ fontWeight: "600", color: "#2a9d8f" }}>Your bid: {bidPrice} $</Text>
 					</View>
 
 					{username && <Text>Created by: {username}</Text>}

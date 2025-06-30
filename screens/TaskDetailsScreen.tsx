@@ -56,11 +56,11 @@ export default function TaskDetailsScreen({ route }: Props) {
 	const assignWorker = async (workerId: string) => {
 		try {
 			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/assign`, { user_id: workerId }, { headers: { Authorization: `Bearer ${token}` } });
-			Alert.alert("Успіх", "Працівника призначено!");
+			Alert.alert("Success", "Worker assigned!");
 			navigation.goBack();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Помилка при призначенні";
-			Alert.alert("Помилка", msg);
+			const msg = err.response?.data?.error || "Error assigning worker";
+			Alert.alert("Error", msg);
 		}
 	};
 
@@ -68,14 +68,14 @@ export default function TaskDetailsScreen({ route }: Props) {
 		try {
 			setLoading(true);
 			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/reopen`, {}, { headers: { Authorization: `Bearer ${token}` } });
-			Alert.alert("Успіх", "Завдання повернуто до статусу відкритого!");
+			Alert.alert("Success", "Task has been reopened!");
 			setCurrentTask({ ...currentTask, status: "Open", who_took: null });
 		} catch (err: any) {
 			if (err.response?.status === 403) {
-				Alert.alert("Помилка", "Ви не маєте прав для цієї операції");
+				Alert.alert("Error", "You do not have permission for this operation");
 			} else {
-				const msg = err.response?.data?.error || "Не вдалося змінити статус завдання";
-				Alert.alert("Помилка", msg);
+				const msg = err.response?.data?.error || "Failed to change task status";
+				Alert.alert("Error", msg);
 			}
 		} finally {
 			setLoading(false);
@@ -87,27 +87,27 @@ export default function TaskDetailsScreen({ route }: Props) {
 			await axios.delete(`http://localhost:3000/tasks/${currentTask.id}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			Alert.alert("Видалено", "Завдання видалено успішно!");
+			Alert.alert("Deleted", "Task deleted successfully!");
 			navigation.goBack();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Помилка при видаленні";
-			Alert.alert("Помилка", msg);
+			const msg = err.response?.data?.error || "Error deleting task";
+			Alert.alert("Error", msg);
 		}
 	};
 
 	const applyForTask = async () => {
 		if (!bidPrice || Number(bidPrice) <= 0) {
-			Alert.alert("Помилка", "Введіть коректну суму ставки.");
+			Alert.alert("Error", "Please enter a valid bid amount.");
 			return;
 		}
 		try {
 			setLoading(true);
 			await axios.post(`http://localhost:3000/tasks/apply/${currentTask.id}`, { bid_price: Number(bidPrice) }, { headers: { Authorization: `Bearer ${token}` } });
-			Alert.alert("Успіх", "Ви успішно подалися на завдання!");
+			Alert.alert("Success", "You have successfully applied for the task!");
 			navigation.goBack();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Не вдалося податись на завдання";
-			Alert.alert("Помилка", msg);
+			const msg = err.response?.data?.error || "Failed to apply for the task";
+			Alert.alert("Error", msg);
 		} finally {
 			setLoading(false);
 		}
@@ -117,11 +117,11 @@ export default function TaskDetailsScreen({ route }: Props) {
 		try {
 			setLoading(true);
 			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } });
-			Alert.alert("Успіх", "Завдання позначено як виконане!");
+			Alert.alert("Success", "Task marked as completed!");
 			navigation.goBack();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Не вдалося позначити як виконане";
-			Alert.alert("Помилка", msg);
+			const msg = err.response?.data?.error || "Failed to mark task as completed";
+			Alert.alert("Error", msg);
 		} finally {
 			setLoading(false);
 		}
@@ -148,16 +148,16 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 			{user?.user_role === "customer" && (
 				<>
-					<Text style={styles.sectionTitle}>Заявки на це завдання</Text>
+					<Text style={styles.sectionTitle}>Applications for this task</Text>
 
 					{applications.length === 0 ? (
-						<Text style={styles.emptyText}>Поки що немає заявок.</Text>
+						<Text style={styles.emptyText}>No applications currently.</Text>
 					) : (
 						applications.map((app, i) => (
 							<View key={i} style={styles.applicationCard}>
 								<View style={styles.applicationInfo}>
 									<Text style={styles.applicationUsername}>{app.username}</Text>
-									<Text style={styles.applicationBid}>💸 {app.bid_price} грн</Text>
+									<Text style={styles.applicationBid}>{app.bid_price} $</Text>
 								</View>
 								<TouchableOpacity style={styles.assignButton} onPress={() => assignWorker(app.user_id)}>
 									<MaterialCommunityIcons name="check-circle-outline" size={28} color="#2a9d8f" />
@@ -169,27 +169,27 @@ export default function TaskDetailsScreen({ route }: Props) {
 					{currentTask.status === "Done" && (
 						<View style={styles.customerActions}>
 							<ActionButton
-								text="Підтвердити виконання"
+								text="Confirm completion"
 								onPress={async () => {
 									try {
 										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
-										Alert.alert("Успіх", "Завдання підтверджено як виконане!");
+										Alert.alert("Success", "Task confirmed as completed!");
 										setCurrentTask({ ...currentTask, status: "Completed" });
 									} catch {
-										Alert.alert("Помилка", "Не вдалося підтвердити виконання");
+										Alert.alert("Error", "Failed to confirm completion");
 									}
 								}}
 								backgroundColor="#2f9e44"
 							/>
 							<ActionButton
-								text="Скасувати завдання"
+								text="Cancel task"
 								onPress={async () => {
 									try {
 										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/cancel`, {}, { headers: { Authorization: `Bearer ${token}` } });
-										Alert.alert("Успіх", "Завдання скасовано");
+										Alert.alert("Success", "Task canceled");
 										setCurrentTask({ ...currentTask, status: "Canceled" });
 									} catch {
-										Alert.alert("Помилка", "Не вдалося скасувати завдання");
+										Alert.alert("Error", "Failed to cancel task");
 									}
 								}}
 								backgroundColor="#e63946"
@@ -201,14 +201,14 @@ export default function TaskDetailsScreen({ route }: Props) {
 					{currentTask.status === "Assigned" && (
 						<View style={styles.customerActions}>
 							<ActionButton
-								text="Скасувати призначення"
+								text="Cancel assignment"
 								onPress={async () => {
 									try {
 										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/unassign`, {}, { headers: { Authorization: `Bearer ${token}` } });
-										Alert.alert("Успіх", "Призначення скасовано");
+										Alert.alert("Success", "Assignment canceled");
 										setCurrentTask({ ...currentTask, status: "Open", who_took: null });
 									} catch {
-										Alert.alert("Помилка", "Не вдалося скасувати призначення");
+										Alert.alert("Error", "Failed to cancel assignment");
 									}
 								}}
 								backgroundColor="#e63946"
@@ -217,7 +217,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 					)}
 
 					<View style={{ marginTop: 30 }}>
-						<ActionButton text="Видалити завдання" onPress={deleteTask} backgroundColor="#b02a37" />
+						<ActionButton text="Delete task" onPress={deleteTask} backgroundColor="#b02a37" />
 					</View>
 				</>
 			)}
@@ -225,12 +225,12 @@ export default function TaskDetailsScreen({ route }: Props) {
 			{user?.user_role === "worker" && (
 				<>
 					{noBiddingStatuses.includes(currentTask.status) ? (
-						<Text style={styles.emptyText}>На це завдання більше не можна подавати ставки.</Text>
+						<Text style={styles.emptyText}>No more bids can be placed on this task.</Text>
 					) : isAssignedToUser ? (
 						<>
-							<ActionButton text={loading ? "Зачекайте..." : "Позначити як виконане"} onPress={markTaskAsDone} disabled={loading} backgroundColor="#2f9e44" />
+							<ActionButton text={loading ? "Please wait..." : "Mark as completed"} onPress={markTaskAsDone} disabled={loading} backgroundColor="#2f9e44" />
 							<ActionButton
-								text={loading ? "Зачекайте..." : "↩ Позначити як не виконане"}
+								text={loading ? "Please wait..." : "Mark as not completed"}
 								onPress={markTaskAsUndone}
 								disabled={loading}
 								backgroundColor="#e07a5f"
@@ -239,19 +239,19 @@ export default function TaskDetailsScreen({ route }: Props) {
 						</>
 					) : !hasApplied ? (
 						<>
-							<Text style={styles.bidLabel}>Ваша ставка (грн):</Text>
+							<Text style={styles.bidLabel}>Your bid (UAH):</Text>
 							<TextInput
 								style={styles.bidInput}
 								keyboardType="numeric"
 								value={bidPrice}
 								onChangeText={setBidPrice}
-								placeholder="Введіть суму"
+								placeholder="Enter amount"
 								placeholderTextColor="#888"
 							/>
-							<ActionButton text={loading ? "Подання..." : "Податись на завдання"} onPress={applyForTask} disabled={loading} backgroundColor="#2a9d8f" />
+							<ActionButton text={loading ? "Submitting..." : "Apply for task"} onPress={applyForTask} disabled={loading} backgroundColor="#2a9d8f" />
 						</>
 					) : (
-						<Text style={styles.emptyText}>Ви вже подали заявку на це завдання.</Text>
+						<Text style={styles.emptyText}>You have already applied for this task.</Text>
 					)}
 				</>
 			)}
@@ -259,37 +259,12 @@ export default function TaskDetailsScreen({ route }: Props) {
 	);
 }
 
-const DetailRow = ({ icon, label, value, color = "#333" }: { icon: string; label: string; value: string; color?: string }) => (
-	<View style={styles.detailRow}>
-		<MaterialCommunityIcons name={icon} size={20} color="#00509e" style={styles.detailIcon} />
-		<Text style={styles.detailLabel}>{label}:</Text>
-		<Text style={[styles.detailValue, { color }]}>{value}</Text>
-	</View>
-);
-
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
 	<View style={styles.infoRow}>
 		<Text style={styles.infoLabel}>{label}:</Text>
 		<Text style={styles.infoValue}>{value}</Text>
 	</View>
 );
-
-const getStatusColor = (status: string) => {
-	switch (status) {
-		case "Open":
-			return "#2a9d8f";
-		case "Canceled":
-			return "#e76f51";
-		case "Assigned":
-			return "#f4a261";
-		case "Completed":
-			return "#2f9e44";
-		case "Applied":
-			return "#a55eea";
-		default:
-			return "#333";
-	}
-};
 
 const ActionButton = ({
 	text,
@@ -315,26 +290,6 @@ const styles = StyleSheet.create({
 		fontWeight: "700",
 		marginBottom: 12,
 		color: "#2c3a7d",
-	},
-	detailRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 14,
-	},
-	detailIcon: {
-		marginRight: 14,
-		width: 28,
-	},
-	detailLabel: {
-		fontWeight: "600",
-		fontSize: 15,
-		color: "#3b4a6b",
-		width: 95,
-	},
-	detailValue: {
-		flex: 1,
-		fontSize: 15,
-		color: "#1a2238",
 	},
 	header: {
 		fontSize: 28,

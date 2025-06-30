@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { MainTabsParamList } from "../App";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { TaskForm } from "./components/TaskForm";
 import { useUserContext } from "../context/UserContext";
+import { useFocusEffect } from "@react-navigation/native";
 
-type Props = BottomTabScreenProps<MainTabsParamList, "dashboard">;
-
-export default function DashboardScreen({ route }: Props) {
+export default function DashboardScreen() {
 	const { user, refetch } = useCurrentUser("");
 	const { token } = useUserContext();
 	const [showForm, setShowForm] = useState(false);
@@ -22,8 +19,13 @@ export default function DashboardScreen({ route }: Props) {
 	const [description, setDescription] = useState("");
 	const [day, setDay] = useState("");
 
-	// Локальний стан для таймауту
 	const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+
+	useFocusEffect(
+		useCallback(() => {
+			refetch();
+		}, [refetch])
+	);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -35,7 +37,7 @@ export default function DashboardScreen({ route }: Props) {
 
 	const handleSubmit = async () => {
 		if (!token) {
-			setMessage("Токен відсутній. Будь ласка, увійдіть знову.");
+			setMessage("Token is missing. Please log in again.");
 			setMessageType("error");
 			return;
 		}
@@ -58,7 +60,7 @@ export default function DashboardScreen({ route }: Props) {
 				}
 			);
 
-			setMessage("Завдання успішно створено!");
+			setMessage("Task created successfuly!");
 			setMessageType("success");
 			setShowForm(false);
 			setPrice("");
@@ -67,7 +69,7 @@ export default function DashboardScreen({ route }: Props) {
 			setTimeOfDay("Morning");
 			setJobType("Gardening");
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Помилка створення завдання";
+			const msg = err.response?.data?.error || "Error creating task";
 			setMessage(msg);
 			setMessageType("error");
 		}
@@ -99,12 +101,13 @@ export default function DashboardScreen({ route }: Props) {
 			</View>
 
 			<View style={styles.topSection}>
-				<Text style={styles.helloText}>Hello, {user.username ?? user.email}</Text>
-				<Text style={styles.headerText}>Need Help? Get it done.</Text>
+				<Text style={styles.headerText}>Hello, {user.username ?? user.email}</Text>
+				<Text style={styles.helloText}>Need Help? Get it done.</Text>
+				<Text style={[styles.helloText, { marginBottom: 10 }]}>Your current role: {user.user_role}</Text>
 
 				{user.user_role === "customer" && !showForm && (
 					<TouchableOpacity style={styles.getDoneButton} onPress={() => setShowForm(true)}>
-						<Text style={styles.getDoneButtonText}>🛠️ Get Something Done</Text>
+						<Text style={styles.getDoneButtonText}>Get Something Done</Text>
 					</TouchableOpacity>
 				)}
 			</View>
@@ -169,8 +172,8 @@ const styles = StyleSheet.create({
 	helloText: {
 		fontSize: 20,
 		color: "#012333",
-		fontWeight: "700",
-		marginBottom: 6,
+		fontWeight: "400",
+		marginBottom: 2,
 	},
 
 	headerText: {

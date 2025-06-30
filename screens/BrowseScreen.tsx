@@ -26,7 +26,7 @@ export default function BrowseScreen() {
 			.then((res: any) => setTasks(res.data.tasks))
 			.catch((err) => {
 				console.error("Error loading tasks", err);
-				setMessage("Помилка завантаження завдань");
+				setMessage("Error loading tasks");
 				setMessageType("error");
 			});
 	}, [user]);
@@ -42,7 +42,7 @@ export default function BrowseScreen() {
 			})
 			.catch((err) => {
 				console.error("Error loading applied tasks ", err);
-				setMessage("Помилка завантаження ваших заявок");
+				setMessage("Error loading applied tasks");
 				setMessageType("error");
 			});
 	}, [user, token]);
@@ -73,9 +73,7 @@ export default function BrowseScreen() {
 			{filteredTasks.length === 0 ? (
 				<Text style={styles.emptyText}>No tasks found</Text>
 			) : (
-				filteredTasks.map((task) => (
-					<TaskCard key={task.id} task={task} username={task.username} onPress={() => navigation.navigate("taskDetails", { task, appliedTasks })} />
-				))
+				filteredTasks.map((task) => <TaskCard key={task.id} task={task} onPress={() => navigation.navigate("taskDetails", { task, appliedTasks })} />)
 			)}
 		</ScrollView>
 	);

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, ScrollView } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MainTabsParamList } from "../App";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useUserContext } from "../context/UserContext";
 import axios from "axios";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = NativeStackScreenProps<MainTabsParamList, "account">;
 
@@ -14,10 +15,11 @@ export default function AccountScreen({ navigation }: Props) {
 	const [username, setUsername] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (error) Alert.alert("Помилка", error);
+		if (error) Alert.alert("Error", error);
 	}, [error]);
 
 	const email = user?.email;
+
 	useEffect(() => {
 		const fetchUsername = async () => {
 			try {
@@ -42,7 +44,7 @@ export default function AccountScreen({ navigation }: Props) {
 				routes: [{ name: "login" }],
 			});
 		} catch {
-			Alert.alert("Помилка", "Не вдалося вийти з акаунту");
+			Alert.alert("Error", "Can't logout");
 		}
 	};
 
@@ -50,9 +52,9 @@ export default function AccountScreen({ navigation }: Props) {
 		try {
 			await updateRole(newRole);
 			setRole(newRole);
-			Alert.alert("Успіх", `Роль оновлено до "${newRole}"`);
+			Alert.alert("Success!", `Role updated to "${newRole}"`);
 		} catch (e: any) {
-			Alert.alert("Помилка", e.message || "Не вдалося оновити роль");
+			Alert.alert("Error", e.message || "Can't update role");
 		}
 	};
 
@@ -67,12 +69,12 @@ export default function AccountScreen({ navigation }: Props) {
 	if (!user) {
 		return (
 			<View style={[styles.container, styles.center]}>
-				<Text style={styles.errorText}>Користувача не знайдено</Text>
+				<Text style={styles.errorText}>User not found</Text>
 				<TouchableOpacity style={styles.retryButton} onPress={refetch}>
-					<Text style={styles.retryButtonText}>Спробувати знову</Text>
+					<Text style={styles.retryButtonText}>Try again</Text>
 				</TouchableOpacity>
 				<TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
-					<Text style={styles.logoutButtonText}>🚪 Вийти</Text>
+					<Text style={styles.logoutButtonText}>Log out</Text>
 				</TouchableOpacity>
 			</View>
 		);
@@ -80,7 +82,7 @@ export default function AccountScreen({ navigation }: Props) {
 
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
-			<Text style={styles.title}>Акаунт</Text>
+			<Text style={styles.title}>Account</Text>
 
 			<View style={styles.card}>
 				<Text style={styles.label}>Username</Text>
@@ -93,21 +95,21 @@ export default function AccountScreen({ navigation }: Props) {
 			</View>
 
 			<View style={styles.card}>
-				<Text style={styles.label}>Роль</Text>
-				<Text style={styles.value}>{user.user_role ?? "не вказано"}</Text>
+				<Text style={styles.label}>Role</Text>
+				<Text style={styles.value}>{user.user_role}</Text>
 			</View>
 
 			<View style={styles.actionsContainer}>
 				<TouchableOpacity style={[styles.button, user.user_role === "worker" && styles.activeButton]} onPress={() => handleSetRole("worker")} activeOpacity={0.8}>
-					<Text style={[styles.buttonText, user.user_role === "worker" && styles.activeButtonText]}>Стати Worker</Text>
+					<Text style={[styles.buttonText, user.user_role === "worker" && styles.activeButtonText]}>Become worker</Text>
 				</TouchableOpacity>
 
 				<TouchableOpacity style={[styles.button, user.user_role === "customer" && styles.activeButton]} onPress={() => handleSetRole("customer")} activeOpacity={0.8}>
-					<Text style={[styles.buttonText, user.user_role === "customer" && styles.activeButtonText]}>Стати Customer</Text>
+					<Text style={[styles.buttonText, user.user_role === "customer" && styles.activeButtonText]}>Become customer</Text>
 				</TouchableOpacity>
 
 				<TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout} activeOpacity={0.8}>
-					<Text style={styles.logoutButtonText}>🚪 Вийти</Text>
+					<Text style={styles.logoutButtonText}>Log out</Text>
 				</TouchableOpacity>
 			</View>
 		</ScrollView>

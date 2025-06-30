@@ -14,7 +14,6 @@ export default function MyTasksScreen() {
 	useFocusEffect(
 		useCallback(() => {
 			const fetchTasks = async () => {
-				// Показуємо лише, якщо користувач - customer
 				if (!user || user.user_role !== "customer") {
 					setTasks([]);
 					setLoading(false);
@@ -28,7 +27,6 @@ export default function MyTasksScreen() {
 					const res: any = await axios.get(`http://localhost:3000/tasks/user/${user.id}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					});
-					// res.data.tasks мають бути задачами, створеними користувачем
 					setTasks(res.data.tasks || []);
 				} catch (err) {
 					setError("Failed to load your tasks");
@@ -58,7 +56,6 @@ export default function MyTasksScreen() {
 		);
 	}
 
-	// Якщо роль не customer — показуємо повідомлення (можна змінити під свій сценарій)
 	if (user.user_role !== "customer") {
 		return (
 			<View style={styles.container}>

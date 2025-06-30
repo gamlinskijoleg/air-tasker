@@ -12,7 +12,7 @@ type ContextType = {
 	role: RoleType;
 	setRole: (r: RoleType) => void;
 	refetchUserContext: () => Promise<void>;
-};	
+};
 
 const UserContext = createContext<ContextType | null>(null);
 
@@ -54,7 +54,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 				setRoleState(parsedUser.user_role);
 			}
 		} catch (err) {
-			console.error("❌ Failed to load user context from AsyncStorage", err);
+			console.error("Failed to load user context from AsyncStorage", err);
 		}
 	}, []);
 

@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
-import { useUserContext } from "../context/UserContext";
 import axios from "axios";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 export default function MessagesScreen() {
-	const { user } = useUserContext();
 	const [username, setUsername] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const { user, refetch } = useCurrentUser("");
 
 	useEffect(() => {
 		const fetchUsername = async () => {
@@ -25,6 +26,12 @@ export default function MessagesScreen() {
 
 		if (user?.email) fetchUsername();
 	}, [user?.email]);
+
+	useFocusEffect(
+		useCallback(() => {
+			refetch();
+		}, [refetch])
+	);
 
 	if (loading) {
 		return (
@@ -67,7 +74,7 @@ export default function MessagesScreen() {
 
 			<View style={styles.infoBlock}>
 				<Text style={styles.label}>Role:</Text>
-				<Text style={styles.value}>{user.user_role === "worker" ? "🛠️ Worker" : user.user_role === "customer" ? "📦 Customer" : "—"}</Text>
+				<Text style={styles.value}>{user.user_role === "worker" ? " Worker" : user.user_role === "customer" ? " Customer" : "—"}</Text>
 			</View>
 
 			<View style={styles.infoBlock}>
