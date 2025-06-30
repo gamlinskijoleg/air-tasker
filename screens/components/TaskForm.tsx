@@ -2,57 +2,46 @@ import React from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
-interface TaskFormProps {
-	title: string;
-	setTitle: (value: string) => void;
-	description: string;
-	setDescription: (value: string) => void;
+export type FormState = {
 	price: string;
-	setPrice: (value: string) => void;
 	place: string;
-	setPlace: (value: string) => void;
-	day: string;
-	setDay: (value: string) => void;
+	title: string;
+	message: string | null;
+	messageType: "error" | "success" | null;
 	timeOfDay: string;
-	setTimeOfDay: (value: string) => void;
 	jobType: string;
-	setJobType: (value: string) => void;
+	description: string;
+	day: string;
+};
+
+interface TaskFormProps {
+	formState: FormState;
+	setFormState: React.Dispatch<React.SetStateAction<FormState>>;
 	onSubmit: () => void;
 	onCancel: () => void;
 }
 
 const jobTypes = ["Gardening", "Painting", "Cleaning", "Removals", "Repairs and Installations", "Copywriting", "Data Entry", "Furniture Assembly"];
 
-export const TaskForm = ({
-	title,
-	description,
-	setDescription,
-	setTitle,
-	price,
-	setPrice,
-	place,
-	setPlace,
-	day,
-	setDay,
-	timeOfDay,
-	setTimeOfDay,
-	jobType,
-	setJobType,
-	onSubmit,
-	onCancel,
-}: TaskFormProps) => {
+export const TaskForm = ({ formState, setFormState, onSubmit, onCancel }: TaskFormProps) => {
 	return (
 		<View style={styles.formContainer}>
 			<Text style={styles.header}>Create a New Task</Text>
 
 			<Text style={styles.label}>Task Title</Text>
-			<TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Enter title" placeholderTextColor="#999" />
+			<TextInput
+				style={styles.input}
+				value={formState.title}
+				onChangeText={(text) => setFormState((prev) => ({ ...prev, title: text }))}
+				placeholder="Enter title"
+				placeholderTextColor="#999"
+			/>
 
 			<Text style={styles.label}>Description</Text>
 			<TextInput
 				style={[styles.input, styles.textArea]}
-				value={description}
-				onChangeText={setDescription}
+				value={formState.description}
+				onChangeText={(text) => setFormState((prev) => ({ ...prev, description: text }))}
 				placeholder="Describe the task"
 				multiline
 				numberOfLines={4}
@@ -60,17 +49,42 @@ export const TaskForm = ({
 			/>
 
 			<Text style={styles.label}>Location</Text>
-			<TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Enter location" placeholderTextColor="#999" />
+			<TextInput
+				style={styles.input}
+				value={formState.place}
+				onChangeText={(text) => setFormState((prev) => ({ ...prev, place: text }))}
+				placeholder="Enter location"
+				placeholderTextColor="#999"
+			/>
 
 			<Text style={styles.label}>Price</Text>
-			<TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Enter price" placeholderTextColor="#999" />
+			<TextInput
+				style={styles.input}
+				value={formState.price}
+				onChangeText={(text) => setFormState((prev) => ({ ...prev, price: text }))}
+				keyboardType="numeric"
+				placeholder="Enter price"
+				placeholderTextColor="#999"
+			/>
 
 			<Text style={styles.label}>Day</Text>
-			<TextInput style={styles.input} value={day} onChangeText={setDay} placeholder="Enter day" placeholderTextColor="#999" />
+			<TextInput
+				style={styles.input}
+				value={formState.day}
+				onChangeText={(text) => setFormState((prev) => ({ ...prev, day: text }))}
+				placeholder="Enter day"
+				placeholderTextColor="#999"
+			/>
 
 			<Text style={styles.label}>Time of Day</Text>
 			<View style={styles.pickerWrapper}>
-				<Picker selectedValue={timeOfDay} onValueChange={setTimeOfDay} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
+				<Picker
+					selectedValue={formState.timeOfDay}
+					onValueChange={(value) => setFormState((prev) => ({ ...prev, timeOfDay: value }))}
+					mode="dropdown"
+					style={styles.picker}
+					dropdownIconColor="#00509e"
+				>
 					<Picker.Item label="Morning" value="Morning" />
 					<Picker.Item label="Afternoon" value="Afternoon" />
 					<Picker.Item label="Evening" value="Evening" />
@@ -80,7 +94,13 @@ export const TaskForm = ({
 
 			<Text style={styles.label}>Job Type</Text>
 			<View style={styles.pickerWrapper}>
-				<Picker selectedValue={jobType} onValueChange={setJobType} mode="dropdown" style={styles.picker} dropdownIconColor="#00509e">
+				<Picker
+					selectedValue={formState.jobType}
+					onValueChange={(value) => setFormState((prev) => ({ ...prev, jobType: value }))}
+					mode="dropdown"
+					style={styles.picker}
+					dropdownIconColor="#00509e"
+				>
 					{jobTypes.map((job) => (
 						<Picker.Item key={job} label={job} value={job} />
 					))}

@@ -1,25 +1,43 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import axios from "axios";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { TaskForm } from "./components/TaskForm";
 import { useUserContext } from "../context/UserContext";
 import { useFocusEffect } from "@react-navigation/native";
 
+export type FormState = {
+	price: string;
+	place: string;
+	title: string;
+	message: string | null;
+	messageType: "error" | "success" | null;
+	timeOfDay: string;
+	jobType: string;
+	description: string;
+	day: string;
+};
+
 export default function DashboardScreen() {
 	const { user, refetch } = useCurrentUser("");
 	const { token } = useUserContext();
 	const [showForm, setShowForm] = useState(false);
-	const [price, setPrice] = useState("");
-	const [place, setPlace] = useState("");
-	const [title, setTitle] = useState("");
-	const [message, setMessage] = useState<string | null>(null);
-	const [messageType, setMessageType] = useState<"error" | "success" | null>(null);
-	const [timeOfDay, setTimeOfDay] = useState<string>("Morning");
-	const [jobType, setJobType] = useState<string>("Gardening");
-	const [description, setDescription] = useState("");
-	const [day, setDay] = useState("");
-
 	const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+	const [formState, setFormState] = useState<FormState>({
+		price: "",
+		place: "",
+		title: "",
+		message: null,
+		messageType: null,
+		timeOfDay: "Morning",
+		jobType: "Gardening",
+		description: "",
+		day: "",
+	});
+
+	const updateFormState = (field: keyof FormState, value: any) => {
+		setFormState((prev) => ({ ...prev, [field]: value }));
+	};
 
 	useFocusEffect(
 		useCallback(() => {
@@ -37,41 +55,46 @@ export default function DashboardScreen() {
 
 	const handleSubmit = async () => {
 		if (!token) {
-			setMessage("Token is missing. Please log in again.");
-			setMessageType("error");
+			updateFormState("message", "Token is missing. Please log in again.");
+			updateFormState("messageType", "error");
 			return;
 		}
-
 		try {
 			await axios.post(
 				"http://localhost:3000/tasks/create",
 				{
-					title,
-					description,
-					price: Number(price),
-					place,
-					day,
-					time: timeOfDay,
-					type: jobType,
 					who_made_username: user?.username,
+					title: formState.title,
+					description: formState.description,
+					price: Number(formState.price),
+					place: formState.place,
+					day: formState.day,
+					time: formState.timeOfDay,
+					type: formState.jobType,
 				},
 				{
 					headers: { Authorization: `Bearer ${token}` },
 				}
 			);
 
-			setMessage("Task created successfuly!");
-			setMessageType("success");
+			updateFormState("message", "Task created successfully!");
+			updateFormState("messageType", "success");
 			setShowForm(false);
-			setPrice("");
-			setPlace("");
-			setTitle("");
-			setTimeOfDay("Morning");
-			setJobType("Gardening");
+
+			setFormState((prev) => ({
+				...prev,
+				price: "",
+				place: "",
+				title: "",
+				timeOfDay: "Morning",
+				jobType: "Gardening",
+				description: "",
+				day: "",
+			}));
 		} catch (err: any) {
 			const msg = err.response?.data?.error || "Error creating task";
-			setMessage(msg);
-			setMessageType("error");
+			updateFormState("message", msg);
+			updateFormState("messageType", "error");
 		}
 	};
 
@@ -111,34 +134,23 @@ export default function DashboardScreen() {
 					</TouchableOpacity>
 				)}
 			</View>
+
 			<View style={{ padding: 20, margin: 0, backgroundColor: "#fff" }}>
 				{showForm && (
 					<TaskForm
-						title={title}
-						setTitle={setTitle}
-						description={description}
-						setDescription={setDescription}
-						price={price}
-						setPrice={setPrice}
-						place={place}
-						setPlace={setPlace}
-						day={day}
-						setDay={setDay}
-						timeOfDay={timeOfDay}
-						setTimeOfDay={setTimeOfDay}
-						jobType={jobType}
-						setJobType={setJobType}
+						formState={formState}
+						setFormState={setFormState}
 						onCancel={() => {
 							setShowForm(false);
-							setMessage(null);
-							setMessageType(null);
+							setFormState((prev) => ({ ...prev, message: null, messageType: null }));
 						}}
 						onSubmit={handleSubmit}
 					/>
 				)}
-				{message && (
-					<View style={[styles.messageBox, messageType === "error" ? styles.errorBox : styles.successBox]}>
-						<Text style={[styles.messageText, messageType === "error" ? styles.errorText : styles.successText]}>{message}</Text>
+
+				{formState.message && (
+					<View style={[styles.messageBox, formState.messageType === "error" ? styles.errorBox : styles.successBox]}>
+						<Text style={[styles.messageText, formState.messageType === "error" ? styles.errorText : styles.successText]}>{formState.message}</Text>
 					</View>
 				)}
 			</View>

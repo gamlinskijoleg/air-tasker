@@ -226,14 +226,17 @@ app.post("/tasks/create", async (req: Request, res: Response) => {
 		const user = data.user;
 		console.log(req.body);
 
-		const { price, place, day, time, type, description, title } = req.body;
-
+		const { price, place, day, time, type, description, title, who_made_username } = req.body;
+		console.log("====================================");
+		console.log(req.body);
+		console.log("====================================");
 		if (!price || !place || !day || !time || !type) {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
 
 		const { error: insertError } = await supabase.from("tasks").insert([
 			{
+				who_made_username: who_made_username,
 				who_made_id: user.id,
 				price,
 				place,

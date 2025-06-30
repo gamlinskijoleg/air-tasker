@@ -69,12 +69,12 @@ export default function MessagesScreen() {
 
 			<View style={styles.infoBlock}>
 				<Text style={styles.label}>Email:</Text>
-				<Text style={styles.value}>{user.email}</Text>
+				<Text style={styles.value}>{user.email ?? "—"}</Text>
 			</View>
 
 			<View style={styles.infoBlock}>
 				<Text style={styles.label}>Role:</Text>
-				<Text style={styles.value}>{user.user_role === "worker" ? " Worker" : user.user_role === "customer" ? " Customer" : "—"}</Text>
+				<Text style={styles.value}>{user.user_role === "worker" ? "Worker" : user.user_role === "customer" ? " Customer" : "—"}</Text>
 			</View>
 
 			<View style={styles.infoBlock}>

@@ -129,7 +129,9 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-			<Text>{JSON.stringify(currentTask, null, 2)}</Text>
+			<TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+				<MaterialCommunityIcons name="arrow-left" size={28} color="#00509e" />
+			</TouchableOpacity>
 			<Text style={styles.header}>{currentTask.title}</Text>
 
 			<View style={styles.infoSection}>
@@ -285,6 +287,21 @@ const ActionButton = ({
 );
 
 const styles = StyleSheet.create({
+	backButton: {
+		position: "absolute",
+		top: 0,
+		left: 20,
+		zIndex: 10,
+		padding: 6,
+		backgroundColor: "#fff",
+		borderRadius: 30,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
+	},
+
 	sectionTitle: {
 		fontSize: 19,
 		fontWeight: "700",

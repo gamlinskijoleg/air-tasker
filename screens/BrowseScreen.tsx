@@ -15,9 +15,6 @@ export default function BrowseScreen() {
 	const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 	const [appliedTasks, setAppliedTasks] = useState<any[]>([]);
 	const { user, token } = useUserContext();
-	const [message, setMessage] = useState<string | null>(null);
-	const [messageType, setMessageType] = useState<"error" | "success" | null>(null);
-
 	const fetchTasks = useCallback(() => {
 		if (!user) return;
 		const url = user.user_role === "worker" ? "http://localhost:3000/tasks/all" : `http://localhost:3000/tasks/user/${user.id}`;
@@ -26,8 +23,6 @@ export default function BrowseScreen() {
 			.then((res: any) => setTasks(res.data.tasks))
 			.catch((err) => {
 				console.error("Error loading tasks", err);
-				setMessage("Error loading tasks");
-				setMessageType("error");
 			});
 	}, [user]);
 
@@ -42,8 +37,6 @@ export default function BrowseScreen() {
 			})
 			.catch((err) => {
 				console.error("Error loading applied tasks ", err);
-				setMessage("Error loading applied tasks");
-				setMessageType("error");
 			});
 	}, [user, token]);
 
