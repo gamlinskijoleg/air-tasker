@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }: Props) {
 
 			<TextInput
 				style={styles.input}
-				placeholder="Пароль"
+				placeholder="Password"
 				placeholderTextColor="#6699cc"
 				secureTextEntry
 				autoComplete="password"
