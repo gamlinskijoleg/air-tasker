@@ -11,7 +11,7 @@ import BrowseScreen from "./screens/BrowseScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import MyTasksScreen from "./screens/MyTasksScreen";
 import TaskDetailsScreen from "./screens/TaskDetailsScreen";
-
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { UserProvider } from "./context/UserContext";
 import { getInitialNavigationState, persistNavigationState } from "./utils/navigationPersistence";
 
@@ -64,19 +64,42 @@ function MainTabs() {
 	return (
 		<Tab.Navigator
 			initialRouteName="dashboard"
-			screenOptions={{
-				headerShown: true,
+			screenOptions={({ route }) => ({
+				headerShown: false,
 				tabBarActiveTintColor: "#00509e",
 				tabBarInactiveTintColor: "#888",
 				tabBarStyle: { backgroundColor: "#f0f8ff", paddingBottom: 4, height: 60 },
-				tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
-			}}
+				tabBarShowLabel: false,
+				tabBarIcon: ({ color, size }) => {
+					let iconName = "";
+
+					switch (route.name) {
+						case "dashboard":
+							iconName = "home-outline";
+							break;
+						case "browse":
+							iconName = "search-outline";
+							break;
+						case "mytasks":
+							iconName = "list-outline";
+							break;
+						case "messages":
+							iconName = "chatbubble-ellipses-outline";
+							break;
+						case "account":
+							iconName = "person-outline";
+							break;
+					}
+
+					return <Ionicons name={iconName} size={24} color={color} />;
+				},
+			})}
 		>
-			<Tab.Screen name="dashboard" component={DashboardScreen} options={{ tabBarLabel: "Dashboard", headerShown: false }} />
-			<Tab.Screen name="browse" component={BrowseScreen} options={{ tabBarLabel: "Find", headerShown: false }} />
-			<Tab.Screen name="mytasks" component={MyTasksScreen} options={{ tabBarLabel: "Tasks", headerShown: false }} />
-			<Tab.Screen name="messages" component={MessagesScreen} options={{ tabBarLabel: "Messages", headerShown: false }} />
-			<Tab.Screen name="account" component={AccountScreen} options={{ tabBarLabel: "Account", headerShown: false }} />
+			<Tab.Screen name="dashboard" component={DashboardScreen} />
+			<Tab.Screen name="browse" component={BrowseScreen} />
+			<Tab.Screen name="mytasks" component={MyTasksScreen} />
+			<Tab.Screen name="messages" component={MessagesScreen} />
+			<Tab.Screen name="account" component={AccountScreen} />
 		</Tab.Navigator>
 	);
 }

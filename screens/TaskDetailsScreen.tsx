@@ -230,7 +230,13 @@ export default function TaskDetailsScreen({ route }: Props) {
 						<Text style={styles.emptyText}>No more bids can be placed on this task.</Text>
 					) : isAssignedToUser ? (
 						<>
-							<ActionButton text={loading ? "Please wait..." : "Mark as completed"} onPress={markTaskAsDone} disabled={loading} backgroundColor="#2f9e44" />
+							<ActionButton
+								text={loading ? "Please wait..." : "Mark as completed"}
+								onPress={markTaskAsDone}
+								disabled={loading}
+								backgroundColor="#2f9e44"
+								style={{ marginTop: 24 }}
+							/>
 							<ActionButton
 								text={loading ? "Please wait..." : "Mark as not completed"}
 								onPress={markTaskAsUndone}
@@ -241,7 +247,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 						</>
 					) : !hasApplied ? (
 						<>
-							<Text style={styles.bidLabel}>Your bid (UAH):</Text>
+							<Text style={styles.bidLabel}>Your bid ($):</Text>
 							<TextInput
 								style={styles.bidInput}
 								keyboardType="numeric"
@@ -305,10 +311,11 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontSize: 19,
 		fontWeight: "700",
-		marginBottom: 12,
+		marginVertical: 12,
 		color: "#2c3a7d",
 	},
 	header: {
+		marginTop: 50,
 		fontSize: 28,
 		fontWeight: "700",
 		textAlign: "center",
@@ -375,7 +382,7 @@ const styles = StyleSheet.create({
 	bidLabel: {
 		fontWeight: "600",
 		fontSize: 16,
-		marginBottom: 10,
+		marginVertical: 10,
 		color: "#2a3e66",
 	},
 	bidInput: {
