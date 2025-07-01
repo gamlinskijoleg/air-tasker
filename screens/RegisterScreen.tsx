@@ -4,12 +4,18 @@ import axios from "axios";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList, UserType } from "../App";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserContext } from "../context/UserContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "registration">;
 
 interface RegisterResponse {
+	user: UserType;
+	session: {
+		access_token: string;
+	} | null;
+}
+
+interface LoginResponse {
 	user: UserType;
 	session: {
 		access_token: string;
@@ -21,6 +27,8 @@ export default function RegisterScreen({ navigation }: Props) {
 	const [password, setPassword] = useState("");
 	const [username, setUsername] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [needConfirm, setNeedConfirm] = useState(false);
+
 	const { setUser, setToken, setRole } = useUserContext();
 
 	const onRegister = async () => {
@@ -40,11 +48,15 @@ export default function RegisterScreen({ navigation }: Props) {
 			const { user, session } = res.data;
 
 			if (!session) {
-				Alert.alert("Confirmation", "Please confirm your email to log in.");
+				setNeedConfirm(true);
+					console.log("session isnot here!");
 				setLoading(false);
 				return;
 			}
-
+			else{
+				console.log("session is here!");
+				
+			}
 			const token = session.access_token;
 
 			setUser(user);
@@ -65,6 +77,44 @@ export default function RegisterScreen({ navigation }: Props) {
 		}
 	};
 
+	const onConfirmedEmail = async () => {
+		if (!email || !password) {
+			Alert.alert("Error", "Email and password are required to log in");
+			return;
+		}
+
+		setLoading(true);
+		try {
+			const res = await axios.post<LoginResponse>("http://localhost:3000/login", { email, password });
+			const { user, session } = res.data;
+
+			if (!session) {
+				Alert.alert("Error", "Email not confirmed yet, please check your email.");
+				setLoading(false);
+				return;
+			}
+
+			const token = session.access_token;
+
+			setUser(user);
+			setToken(token);
+			setRole(user.user_role);
+
+			Alert.alert("Success", "You are now logged in");
+			setNeedConfirm(false);
+			setEmail("");
+			setPassword("");
+			setUsername("");
+
+			navigation.replace("mainTabs");
+		} catch (error: any) {
+			console.error(error);
+			Alert.alert("Login Error", error.response?.data?.error || error.message || "Unable to login");
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	return (
 		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
 			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.goBack()}>
@@ -73,7 +123,15 @@ export default function RegisterScreen({ navigation }: Props) {
 
 			<Text style={styles.title}>Registration</Text>
 
-			<TextInput style={styles.input} placeholder="Username" placeholderTextColor="#6699cc" autoCapitalize="none" value={username} onChangeText={setUsername} />
+			<TextInput
+				style={styles.input}
+				placeholder="Username"
+				placeholderTextColor="#6699cc"
+				autoCapitalize="none"
+				value={username}
+				onChangeText={setUsername}
+				editable={!needConfirm}
+			/>
 
 			<TextInput
 				style={styles.input}
@@ -85,6 +143,7 @@ export default function RegisterScreen({ navigation }: Props) {
 				textContentType="emailAddress"
 				value={email}
 				onChangeText={setEmail}
+				editable={!needConfirm}
 			/>
 
 			<TextInput
@@ -96,11 +155,18 @@ export default function RegisterScreen({ navigation }: Props) {
 				textContentType="password"
 				value={password}
 				onChangeText={setPassword}
+				editable={!needConfirm}
 			/>
 
-			<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onRegister} disabled={loading}>
-				<Text style={styles.buttonText}>{loading ? "Wait..." : "Register"}</Text>
-			</TouchableOpacity>
+			{!needConfirm ? (
+				<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={onRegister} disabled={loading}>
+					<Text style={styles.buttonText}>{loading ? "Wait..." : "Register"}</Text>
+				</TouchableOpacity>
+			) : (
+				<TouchableOpacity style={[styles.button, loading && styles.buttonDisabled, { backgroundColor: "#28a745" }]} onPress={onConfirmedEmail} disabled={loading}>
+					<Text style={styles.buttonText}>{loading ? "Checking..." : "I confirmed my email"}</Text>
+				</TouchableOpacity>
+			)}
 		</KeyboardAvoidingView>
 	);
 }
