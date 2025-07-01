@@ -62,7 +62,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 			<TextInput
 				style={styles.input}
-				placeholder="Password"
+				placeholder="Email"
 				placeholderTextColor="#6699cc"
 				keyboardType="email-address"
 				autoCapitalize="none"
