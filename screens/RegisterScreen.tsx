@@ -3,6 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvo
 import axios from "axios";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList, UserType } from "../App";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useUserContext } from "../context/UserContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "registration">;
 
@@ -18,6 +21,7 @@ export default function RegisterScreen({ navigation }: Props) {
 	const [password, setPassword] = useState("");
 	const [username, setUsername] = useState("");
 	const [loading, setLoading] = useState(false);
+	const { setUser, setToken, setRole } = useUserContext();
 
 	const onRegister = async () => {
 		if (!email || !password || !username) {
@@ -41,10 +45,17 @@ export default function RegisterScreen({ navigation }: Props) {
 				return;
 			}
 
-			Alert.alert("Success", "Registration was successful");
+			const token = session.access_token;
+
+			setUser(user);
+			setToken(token);
+			setRole(user.user_role);
+
+			Alert.alert("Success", "Registration successful");
 			setEmail("");
 			setPassword("");
 			setUsername("");
+
 			navigation.replace("mainTabs");
 		} catch (error: any) {
 			console.error(error);
@@ -56,6 +67,10 @@ export default function RegisterScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
+			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.goBack()}>
+				<Ionicons name="arrow-back" size={28} color="#00509e" />
+			</TouchableOpacity>
+
 			<Text style={styles.title}>Registration</Text>
 
 			<TextInput style={styles.input} placeholder="Username" placeholderTextColor="#6699cc" autoCapitalize="none" value={username} onChangeText={setUsername} />
@@ -91,6 +106,13 @@ export default function RegisterScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+	iconBack: {
+		position: "absolute",
+		top: Platform.OS === "ios" ? 60 : 30,
+		left: 20,
+		zIndex: 10,
+	},
+
 	container: {
 		flex: 1,
 		backgroundColor: "#f0f8ff",

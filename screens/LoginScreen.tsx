@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList, UserType } from "../App";
 import { useUserContext } from "../context/UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "login">;
 
@@ -55,6 +56,10 @@ export default function LoginScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.goBack()}>
+				<Ionicons name="arrow-back" size={28} color="#00509e" />
+			</TouchableOpacity>
+
 			<Text style={styles.title}>Log in</Text>
 
 			<TextInput
@@ -88,6 +93,13 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+	iconBack: {
+		position: "absolute",
+		top: Platform.OS === "ios" ? 60 : 30,
+		left: 20,
+		zIndex: 10,
+	},
+
 	container: {
 		flex: 1,
 		backgroundColor: "#f0f8ff",
