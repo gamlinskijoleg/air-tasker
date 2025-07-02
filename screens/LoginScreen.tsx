@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }: Props) {
 		setLoading(true);
 
 		try {
-			const res = await axios.post<LoginResponse>("http://localhost:3000/login", { email, password });
+			const res = await axios.post<LoginResponse>("http://10.0.2.2:3000/login", { email, password });
 
 			const user = res.data.user;
 			const token = res.data.session.access_token;
@@ -56,7 +56,7 @@ export default function LoginScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.goBack()}>
+			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.navigate("home")}>
 				<Ionicons name="arrow-back" size={28} color="#00509e" />
 			</TouchableOpacity>
 

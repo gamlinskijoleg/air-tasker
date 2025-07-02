@@ -23,7 +23,7 @@ export default function AccountScreen({ navigation }: Props) {
 	useEffect(() => {
 		const fetchUsername = async () => {
 			try {
-				const res: any = await axios.get("http://localhost:3000/user/username", { params: { email } });
+				const res: any = await axios.get("http://10.0.2.2:3000/user/username", { params: { email } });
 				setUsername(res.data.username || null);
 			} catch (error) {
 				console.error(error);

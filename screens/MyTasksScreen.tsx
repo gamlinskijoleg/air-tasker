@@ -24,7 +24,7 @@ export default function MyTasksScreen() {
 				setError(null);
 
 				try {
-					const res: any = await axios.get(`http://localhost:3000/tasks/user/${user.id}`, {
+					const res: any = await axios.get(`http://10.0.2.2:3000/tasks/user/${user.id}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					});
 					setTasks(res.data.tasks || []);

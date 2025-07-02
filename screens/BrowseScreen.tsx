@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import { useUserContext } from "../context/UserContext";
 
-const STATUS_OPTIONS = ["All", "Open", "Canceled", "Assigned", "Done", "Completed", "Applied", "In Progress"];
+const STATUS_OPTIONS = ["All", "Open", "Canceled", "Assigned", "Done", "Completed", "Applied"];
 
 export default function BrowseScreen() {
 	const [tasks, setTasks] = useState<any[]>([]);
@@ -17,7 +17,7 @@ export default function BrowseScreen() {
 	const { user, token } = useUserContext();
 	const fetchTasks = useCallback(() => {
 		if (!user) return;
-		const url = user.user_role === "worker" ? "http://localhost:3000/tasks/all" : `http://localhost:3000/tasks/user/${user.id}`;
+		const url = user.user_role === "worker" ? "http://10.0.2.2:3000/tasks/all" : `http://10.0.2.2:3000/tasks/user/${user.id}`;
 		axios
 			.get(url)
 			.then((res: any) => setTasks(res.data.tasks))
@@ -29,7 +29,7 @@ export default function BrowseScreen() {
 	const fetchAppliedTasks = useCallback(() => {
 		if (!user) return;
 		axios
-			.get(`http://localhost:3000/tasks/bids/${user.id}`, {
+			.get(`http://10.0.2.2:3000/tasks/bids/${user.id}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			})
 			.then((res: any) => {

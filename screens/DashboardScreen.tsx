@@ -61,7 +61,7 @@ export default function DashboardScreen() {
 		}
 		try {
 			await axios.post(
-				"http://localhost:3000/tasks/create",
+				"http://10.0.2.2:3000/tasks/create",
 				{
 					who_made_username: user?.username,
 					title: formState.title,

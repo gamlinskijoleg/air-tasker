@@ -30,7 +30,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 		console.log(token);
 
 		axios
-			.get(`http://localhost:3000/tasks/${task.id}/details`, {
+			.get(`http://10.0.2.2:3000/tasks/${task.id}/details`, {
 				headers: { Authorization: `Bearer ${token}` },
 			})
 			.then((res: any) => setCurrentTask(res.data.task))
@@ -45,7 +45,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 		if (user.user_role === "customer") {
 			axios
-				.get(`http://localhost:3000/tasks/${currentTask.id}/applications`, {
+				.get(`http://10.0.2.2:3000/tasks/${currentTask.id}/applications`, {
 					headers: { Authorization: `Bearer ${token}` },
 				})
 				.then((res: any) => setApplications(res.data))
@@ -55,7 +55,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	const assignWorker = async (workerId: string) => {
 		try {
-			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/assign`, { user_id: workerId }, { headers: { Authorization: `Bearer ${token}` } });
+			await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/assign`, { user_id: workerId }, { headers: { Authorization: `Bearer ${token}` } });
 			Alert.alert("Success", "Worker assigned!");
 			navigation.goBack();
 		} catch (err: any) {
@@ -67,7 +67,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 	const markTaskAsUndone = async () => {
 		try {
 			setLoading(true);
-			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/reopen`, {}, { headers: { Authorization: `Bearer ${token}` } });
+			await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/reopen`, {}, { headers: { Authorization: `Bearer ${token}` } });
 			Alert.alert("Success", "Task has been reopened!");
 			setCurrentTask({ ...currentTask, status: "Open", who_took: null });
 		} catch (err: any) {
@@ -84,7 +84,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 
 	const deleteTask = async () => {
 		try {
-			await axios.delete(`http://localhost:3000/tasks/${currentTask.id}`, {
+			await axios.delete(`http://10.0.2.2:3000/tasks/${currentTask.id}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			Alert.alert("Deleted", "Task deleted successfully!");
@@ -102,7 +102,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 		}
 		try {
 			setLoading(true);
-			await axios.post(`http://localhost:3000/tasks/apply/${currentTask.id}`, { bid_price: Number(bidPrice) }, { headers: { Authorization: `Bearer ${token}` } });
+			await axios.post(`http://10.0.2.2:3000/tasks/apply/${currentTask.id}`, { bid_price: Number(bidPrice) }, { headers: { Authorization: `Bearer ${token}` } });
 			Alert.alert("Success", "You have successfully applied for the task!");
 			navigation.goBack();
 		} catch (err: any) {
@@ -116,7 +116,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 	const markTaskAsDone = async () => {
 		try {
 			setLoading(true);
-			await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } });
+			await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/complete`, {}, { headers: { Authorization: `Bearer ${token}` } });
 			Alert.alert("Success", "Task marked as completed!");
 			navigation.goBack();
 		} catch (err: any) {
@@ -174,7 +174,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 								text="Confirm completion"
 								onPress={async () => {
 									try {
-										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
+										await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
 										Alert.alert("Success", "Task confirmed as completed!");
 										setCurrentTask({ ...currentTask, status: "Completed" });
 									} catch {
@@ -187,7 +187,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 								text="Cancel task"
 								onPress={async () => {
 									try {
-										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/cancel`, {}, { headers: { Authorization: `Bearer ${token}` } });
+										await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/cancel`, {}, { headers: { Authorization: `Bearer ${token}` } });
 										Alert.alert("Success", "Task canceled");
 										setCurrentTask({ ...currentTask, status: "Canceled" });
 									} catch {
@@ -206,7 +206,7 @@ export default function TaskDetailsScreen({ route }: Props) {
 								text="Cancel assignment"
 								onPress={async () => {
 									try {
-										await axios.patch(`http://localhost:3000/tasks/${currentTask.id}/unassign`, {}, { headers: { Authorization: `Bearer ${token}` } });
+										await axios.patch(`http://10.0.2.2:3000/tasks/${currentTask.id}/unassign`, {}, { headers: { Authorization: `Bearer ${token}` } });
 										Alert.alert("Success", "Assignment canceled");
 										setCurrentTask({ ...currentTask, status: "Open", who_took: null });
 									} catch {

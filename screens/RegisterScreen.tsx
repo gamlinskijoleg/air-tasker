@@ -39,7 +39,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 		setLoading(true);
 		try {
-			const res = await axios.post<RegisterResponse>("http://localhost:3000/register", {
+			const res = await axios.post<RegisterResponse>("http://10.0.2.2:3000/register", {
 				email,
 				password,
 				username,
@@ -49,13 +49,11 @@ export default function RegisterScreen({ navigation }: Props) {
 
 			if (!session) {
 				setNeedConfirm(true);
-					console.log("session isnot here!");
+				console.log("session isnot here!");
 				setLoading(false);
 				return;
-			}
-			else{
+			} else {
 				console.log("session is here!");
-				
 			}
 			const token = session.access_token;
 
@@ -85,7 +83,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 		setLoading(true);
 		try {
-			const res = await axios.post<LoginResponse>("http://localhost:3000/login", { email, password });
+			const res = await axios.post<LoginResponse>("http://10.0.2.2:3000/login", { email, password });
 			const { user, session } = res.data;
 
 			if (!session) {
@@ -117,7 +115,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
 	return (
 		<KeyboardAvoidingView behavior={Platform.select({ ios: "padding", android: undefined })} style={styles.container}>
-			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.goBack()}>
+			<TouchableOpacity style={styles.iconBack} onPress={() => navigation.navigate("home")}>
 				<Ionicons name="arrow-back" size={28} color="#00509e" />
 			</TouchableOpacity>
 

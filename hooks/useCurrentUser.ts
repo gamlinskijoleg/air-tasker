@@ -3,7 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserContext } from "../context/UserContext";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "http://10.0.2.2:3000";
 
 interface MeResponse {
 	user: {
